@@ -1,9 +1,39 @@
 <!DOCTYPE HTML>
 <html>
 <head>
+	<link href="https://fonts.googleapis.com/css2?family=Gamja+Flower&family=Michroma&family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 	<script src = "BlockGameJs.js"></script>
-	<link rel="stylesheet" type="text/css" href="BlockGameJs.css">
+	<link rel="stylesheet"  href="BlockGameStyle.css">
+	<title>벽돌깨기 게임</title>
 </head>
 <body>
+	<!-- 게임 초기 화면 -->
+	<div class="menu-container">
+		<h1 class="game-title1">PROJECT<br></h1>
+		<h1 class="game-title2">HAIL MARY</h1>
+		
+		<div class="menu-buttons">
+			<button class="menu-btn" id="startBtn">
+				<span class="icon"><i class="fa-solid fa-play icon"></i></span>
+    			<span class="text">게임 시작</span>
+			</button>
+			
+			<button class="menu-btn">
+				<span class="icon"><i class="fa-solid fa-gear icon"></i></span>
+    			<span class="text">환경설정</span>
+			</button>
+			
+			<button class="menu-btn">
+				<span class="icon"><i class="fa-solid fa-right-from-bracket icon"></i></span>
+    			<span class="text">종료</span>
+			</button>
+		</div>
+	</div>
+
+	<!-- 게임 화면 -->
+	 <div class="game-container" id="gameContainer">
+		<canvas id="gameCanvas" width="800" height="600"></canvas>
+	 </div>
 </body>
 </html>
