@@ -125,11 +125,76 @@ body{
 
 /* 게임 화면 */
 .game-container {
-    display: none;
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    gap:14px;
+}
+
+.game-ui{
+    width:800px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    color:white;
+    font-family:"Orbitron", sans-serif;
+}
+
+.score-box{
+    padding:8px 14px;
+    border:1px solid rgba(255,140,58,0.85);
+    background:rgba(0,0,0,0.45);
+    letter-spacing:2px;
+}
+
+.o2-panel{
+    width:430px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:8px 14px;
+    border:1px solid rgba(126,231,255,0.8);
+    background:rgba(0,0,0,0.45);
+}
+
+.o2-label{
+    color:#7ee7ff;
+    font-weight:700;
+}
+
+.o2-bar-outer{
+    flex:1;
+    height:18px;
+    border:1px solid rgba(255,255,255,0.7);
+    background:rgba(255,255,255,0.12);
+    overflow:hidden;
+}
+
+.o2-bar-inner{
+    width:100%;
+    height:100%;
+    background:linear-gradient(90deg, #7ee7ff, #ffffff);
+    transition:width 0.2s;
+}
+
+.o2-bar-inner.low{
+    background:linear-gradient(90deg, #ff3b20, #ffb067);
+    animation:o2Blink 0.45s infinite alternate;
+}
+
+.o2-percent{
+    width:52px;
+    text-align:right;
+}
+
+@keyframes o2Blink{
+    from{ opacity:1; }
+    to{ opacity:0.45; }
 }
 
 /* 캔버스 */
 #gameCanvas {
-    border: 4px solid black;
-    background-color: white;
+    border: 4px solid rgba(255,140,58,0.9);
+    background-color: black;
+    box-shadow:0 0 30px rgba(255,140,58,0.35);
 }
