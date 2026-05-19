@@ -4,12 +4,13 @@
 	<link href="https://fonts.googleapis.com/css2?family=Gamja+Flower&family=Michroma&family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 	<script src = "BlockGameJs.js"></script>
+	<script src = "SettingsJs.js"></script>	<!--환경 설정 관련 js파일-->
 	<link rel="stylesheet"  href="BlockGameStyle.css">
 	<title>벽돌깨기 게임</title>
 </head>
 <body>
 	<!-- 게임 초기 화면 -->
-	<div class="menu-container">
+	<div class="menu-container" id="menu-container">
 		<h1 class="game-title1">PROJECT<br></h1>
 		<h1 class="game-title2">HAIL MARY</h1>
 		
@@ -19,7 +20,7 @@
     			<span class="text">게임 시작</span>
 			</button>
 			
-			<button class="menu-btn">
+			<button class="menu-btn" id="settingsBtn">
 				<span class="icon"><i class="fa-solid fa-gear icon"></i></span>
     			<span class="text">환경설정</span>
 			</button>
@@ -35,5 +36,124 @@
 	 <div class="game-container" id="gameContainer">
 		<canvas id="gameCanvas" width="800" height="600"></canvas>
 	 </div>
+
+	<!--환경 설정-->
+	 <div class ="settings-container" id="settingsContainer">
+	 	<h1 class="settings-title">환경설정</h1>
+	 	<div class="settings-buttons">
+	 		<button class="menu-btn" id="audioBtn">
+	 			<span class="text">사운드 설정</span>
+	 		</button>
+	 	</div>
+	 	<div class="settings-buttons">
+	 		<button class="menu-btn" id="backgroundBtn">
+	 			<span class="text">배경 설정</span>
+	 		</button>
+	 	</div>
+	 	<div class="settings-buttons">
+	 		<button class="menu-btn" id="controlStyleBtn">
+	 			<span class="text">조작 방식</span>
+	 		</button>
+	 	</div>
+	 		<button class="menu-btn" id="backBtn">
+	 			<span class="text">뒤로가기</span>
+	 		</button>
+	 </div>
+	<!-- 사운드 설정 화면 -->
+	<div class="audio-settings-container">
+	    <h1 class="settings-title">사운드 설정</h1>
+
+	    <div class="audio-section-divider">BGM</div>
+
+	    <div class="audio-row">
+	        <span class="audio-label">BGM</span>
+	        <button class="toggle-btn" id="bgmToggleBtn">ON</button>
+	    </div>
+
+	    <div class="audio-row">
+	        <span class="audio-label">Track</span>
+	        <select id="trackSelect" class="track-select">
+	            <option value="audio/leberch-space-440026.mp3">Mission Control</option>
+	            <option value="audio/nastelbom-space-galaxy-universe-music-357376.mp3">Space Galaxy</option>
+	            <option value="audio/monume-space-ambient-498030.mp3">Space Ambient</option>
+	        </select>
+	    </div>
+
+	    <div class="audio-row">
+	        <span class="audio-label">Volume</span>
+	        <input type="range" id="volumeSlider" min="0" max="100" value="50">
+	    </div>
+
+	    <div class="audio-section-divider">효과음</div>
+
+	    <div class="audio-row">
+	        <span class="audio-label">블록 효과음 크기</span>
+	        <input type="range" id="sfxVolumeSlider" min="0" max="100" value="50">
+	    </div>
+
+	    <button class="menu-btn" id="audioBackBtn">
+	        <span class="text">뒤로가기</span>
+	    </button>
+	</div>
+
+<!-- 배경 설정 화면 -->
+<div class="background-settings-container">
+    <h1 class="settings-title">배경 설정</h1>
+
+    <div class="background-buttons">
+        <button class="menu-btn" id="bg1Btn">
+            <span class="text">배경 1</span>
+        </button>
+
+        <button class="menu-btn" id="bg2Btn">
+            <span class="text">배경 2</span>
+        </button>
+
+        <button class="menu-btn" id="bg3Btn">
+            <span class="text">배경 3</span>
+        </button>
+
+        <button class="menu-btn" id="backgroundBackBtn">
+            <span class="text">뒤로가기</span>
+        </button>
+    </div>
+</div>
+
+<!-- 조작 방식 설정 화면 -->
+<div class="control-settings-container">
+    <h1 class="settings-title">조작 방식</h1>
+
+    <div class="control-buttons">
+        <button class="menu-btn control-option-btn" id="controlKeyboardBtn">
+            <span class="text">키보드</span>
+        </button>
+
+        <button class="menu-btn control-option-btn" id="controlMouseBtn">
+            <span class="text">마우스</span>
+        </button>
+
+        <button class="menu-btn control-option-btn" id="controlBothBtn">
+            <span class="text">키보드 + 마우스</span>
+        </button>
+
+        <button class="menu-btn" id="controlBackBtn">
+            <span class="text">뒤로가기</span>
+        </button>
+    </div>
+</div>
+
+<!-- 배경음 플레이어 -->
+<audio id="bgmPlayer" loop>
+    <source src="audio/leberch-space-440026.mp3" type="audio/mpeg">
+</audio>
+
+<!-- 효과음 플레이어 -->
+<audio id="sfxPlayer">
+    <source src="audio/dragon-studio-zap-hit-474055.mp3" type="audio/mpeg">
+</audio>
+
+
+
+
 </body>
 </html>

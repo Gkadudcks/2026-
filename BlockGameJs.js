@@ -14,6 +14,7 @@ window.addEventListener("DOMContentLoaded", () => {
     let o2 = 100;
     let lastTime = 0;
     let lowOxygenShake = 0;
+    let gameOverMessage = null;
 
     const ball = {
         // ball의 처음 위치 (가로 : canvas의 중앙 / 세로 : 캔버스 높이 - 90)
@@ -53,6 +54,8 @@ window.addEventListener("DOMContentLoaded", () => {
     
     let bricks = [];
     let o2Items = [];
+
+    const sfxPlayer = document.getElementById("sfxPlayer");
 
     // 게임 화면에 score 및 o2 박스 만들기
     const ui = document.createElement("div");
@@ -102,6 +105,7 @@ window.addEventListener("DOMContentLoaded", () => {
         ball.dx = 3;
         ball.dy = -3;
         paddle.x = WIDTH / 2 - paddle.width / 2;
+        gameOverMessage = null;
         createBricks();
         updateUI();
     }
@@ -244,6 +248,8 @@ window.addEventListener("DOMContentLoaded", () => {
                 ball.dy *= -1;
                 score += 10;
                 spawnO2Item(brick.x + brick.width / 2, brick.y + brick.height / 2);
+                sfxPlayer.currentTime = 0;
+                sfxPlayer.play();
             }
         });
 
@@ -271,16 +277,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     function gameOver(message) {
         isPlaying = false;
-        cancelAnimationFrame(animationId);
-
-        ctx.fillStyle = "rgba(0, 0, 0, 0.72)";
-        ctx.fillRect(0, 0, WIDTH, HEIGHT);
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 38px Orbitron";
-        ctx.textAlign = "center";
-        ctx.fillText(message, WIDTH / 2, HEIGHT / 2 - 20);
-        ctx.font = "18px Orbitron";
-        ctx.fillText("게임 시작 버튼으로 다시 시작", WIDTH / 2, HEIGHT / 2 + 30);
+        gameOverMessage = message;
     }
 
     function updateOxygen(deltaTime) {
@@ -325,6 +322,23 @@ window.addEventListener("DOMContentLoaded", () => {
         drawBall();
         drawLowOxygenWarning();
 
+        if (gameOverMessage) {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.72)";
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 38px Orbitron";
+            ctx.textAlign = "center";
+            ctx.fillText(gameOverMessage, WIDTH / 2, HEIGHT / 2 - 20);
+            ctx.font = "18px Orbitron";
+            ctx.fillText("게임 시작 버튼으로 다시 시작", WIDTH / 2, HEIGHT / 2 + 30);
+
+            setTimeout(() => {
+                gameContainer.style.display = "none";
+                menuContainer.style.display = "flex";
+            }, 1500);
+            return;
+        }
+
         animationId = requestAnimationFrame(gameLoop);
     }
 
@@ -339,16 +353,19 @@ window.addEventListener("DOMContentLoaded", () => {
     });
 
     document.addEventListener("keydown", (event) => {
+        if (window.controlMode === "mouse") return;
         if (event.key === "ArrowLeft") keys.left = true;
         if (event.key === "ArrowRight") keys.right = true;
     });
 
     document.addEventListener("keyup", (event) => {
+        if (window.controlMode === "mouse") return;
         if (event.key === "ArrowLeft") keys.left = false;
         if (event.key === "ArrowRight") keys.right = false;
     });
 
     canvas.addEventListener("mousemove", (event) => {
+        if (window.controlMode === "keyboard") return;
         const rect = canvas.getBoundingClientRect();
         paddle.x = event.clientX - rect.left - paddle.width / 2;
         paddle.x = Math.max(0, Math.min(WIDTH - paddle.width, paddle.x));
