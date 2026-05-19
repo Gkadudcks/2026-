@@ -32,9 +32,20 @@
 		</div>
 	</div>
 
+	<!-- 난이도 화면 -->
+	<div id="difficultyContainer" class="difficulty-container">
+		<h2 class = "difficulty-title">SELECT DIFFICULTY</h2>
+		<button class = "difficulty-btn" data-mode="easy">EASY</button>
+		<button class = "difficulty-btn" data-mode="normal">NORMAL</button>
+		<button class = "difficulty-btn" data-mode="hard">HARD</button>
+		<button class = "difficulty-btn" data-mode="impossible">IMPOSSIBLE</button>
+		<button id="difficultyBackBtn" class="difficulty-btn">← BACK</button>
+	</div>
+
 	<!-- 게임 화면 -->
 	 <div class="game-container" id="gameContainer">
 		<canvas id="gameCanvas" width="800" height="600"></canvas>
+		<button id="backToMenuBtn">RETURN TO MENU</button>
 	 </div>
 
 	<!--환경 설정-->

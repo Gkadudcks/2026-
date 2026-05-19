@@ -13,7 +13,10 @@ body{
     align-items: center;
 
     background-color: rgb(26, 26, 26);
-    background-image:url("images/space-background1.png");
+    /*
+        수정 사항 : css에서 설정해주는 것이 아닌 js 시작 시에 설정하도록
+        background-image:url("images/space-background1.png");
+    */
 
     background-size:contain;
     background-position:center;
@@ -34,6 +37,7 @@ body{
     display:flex;
     flex-direction:column;
     align-items:center;
+    position:relative;
 }
 
 .game-title1 {
@@ -119,6 +123,40 @@ body{
     transform:scale(1.03);
 }
 
+.difficulty-container{
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    gap:18px;
+    margin-top:30px;
+}
+
+.difficulty-title{
+    color:white;
+    font-family:"Orbitron", sans-serif;
+    font-size:28px;
+    letter-spacing:4px;
+}
+
+.difficulty-btn{
+    width:280px;
+    height:58px;
+    border:1px solid rgba(255,255,255,0.8);
+    background:rgba(0,0,0,0.35);
+    color:white;
+    font-family:"Orbitron", sans-serif;
+    font-size:18px;
+    letter-spacing:3px;
+    cursor:pointer;
+    transition:0.25s;
+}
+
+.difficulty-btn:hover{
+    background:white;
+    color:black;
+    transform:scale(1.03);
+}
+
 /************************************************
 *                  게임 화면                     *
 *************************************************/
@@ -194,6 +232,34 @@ body{
     border: 4px solid rgba(255,140,58,0.9);
     background-color: black;
     box-shadow:0 0 30px rgba(255,140,58,0.35);
+}
+
+#backToMenuBtn{
+    position:absolute;
+    top:60%;
+    left:50%;
+    transform:translateX(-50%);
+
+    padding:14px 28px;
+
+    border:none;
+    border-radius:10px;
+
+    background:#ff8c3a;
+    color:white;
+
+    font-size:18px;
+    font-family:Orbitron;
+
+    cursor:pointer;
+
+    display:none;
+
+    z-index:20;
+}
+
+#backToMenuBtn:hover{
+    background:#ffb067;
 }
 
 /************************************************

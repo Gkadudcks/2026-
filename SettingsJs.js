@@ -6,6 +6,8 @@ document.addEventListener("DOMContentLoaded",() =>{
 	const settingsBtn = document.getElementById("settingsBtn");
 	const backBtn = document.getElementById("backBtn");
 
+	// 현재 배경 화면
+	window.currentMenuBackground = 'url("images/space-background1.png")';
 
 	const showMenu = () =>{
 		menuContainer.style.display="flex";
@@ -111,15 +113,18 @@ document.addEventListener("DOMContentLoaded",() =>{
 	};
 
 	bg1Btn.addEventListener("click", () => {
-		applyBackground("images/space-background1.png");
+		window.currentMenuBackground = 'url("images/space-background1.png")';
+		document.body.style.backgroundImage = window.currentMenuBackground;
 	});
 
 	bg2Btn.addEventListener("click", () => {
-		applyBackground("images/space-background2.png");
+		window.currentMenuBackground = 'url("images/space-background2.png")';
+		document.body.style.backgroundImage = window.currentMenuBackground;
 	});
 
 	bg3Btn.addEventListener("click", () => {
-		applyBackground("images/space-background3.png");
+		window.currentMenuBackground = 'url("images/space-background3.png")';
+		document.body.style.backgroundImage = window.currentMenuBackground;
 	});
 
 	/*조작 방식 설정*/
