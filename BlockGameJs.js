@@ -50,12 +50,14 @@ window.addEventListener("DOMContentLoaded", () => {
         { container: backgroundSettingsContainer, controls: backgroundSettingsContainer.querySelectorAll(".menu-btn"), selectedIndex: 0 },
         { container: controlSettingsContainer, controls: controlSettingsContainer.querySelectorAll(".menu-btn"), selectedIndex: 0 }
     ];
+	
+	
     const difficultySettings = {
         easy: {
         ballSpeed: 6,
         o2Drain: 2,
-        brickRow: 3,
-        brickCol: 6
+        brickRow: 3, // 벽돌 세로 줄 개수
+        brickCol: 6	 // 벽돌 가로 칸 개수
     },
     normal: {
         ballSpeed: 8,
@@ -160,34 +162,55 @@ window.addEventListener("DOMContentLoaded", () => {
     const o2Bar = document.getElementById("o2Bar");
     const o2Text = document.getElementById("o2Text");
 
-    function createBricks() {
+    // 벽돌 생성 함수
+	function createBricks() {
+
+		// 기존 벽돌 배열 초기화
 		bricks = [];
 
-    const settings = difficultySettings[currentDifficulty];
+		// 현재 난이도에 맞는 설정 가져오기
+		const settings = difficultySettings[currentDifficulty];
 
-    const row = settings.brickRow;
-    const col = settings.brickCol;
+		// 현재 난이도의 벽돌 행/열 개수 가져오기
+		const row = settings.brickRow;
+		const col = settings.brickCol;
 
-    const padding = 8;
-    const offsetLeft = 35;
-    const offsetTop = 70;
+		// 벽돌 사이 간격
+		const padding = 8;
 
-    // 화면 너비에 맞춰 벽돌 크기 자동 계산
-    const brickWidth =
-        (WIDTH - offsetLeft * 2 - padding * (col - 1)) / col;
+		// 벽돌 시작 위치
+		const offsetLeft = 35;
+		const offsetTop = 70;
 
-    // 난이도가 올라갈수록 세로 크기도 조금 작아짐
-    const brickHeight = Math.max(14, 28 - row * 2);
+		// 화면 너비에 맞게 벽돌 너비 자동 계산
+		// 난이도가 올라가 col 개수가 많아지면 벽돌 크기가 자동으로 작아짐
+		const brickWidth = (WIDTH - offsetLeft * 2 - padding * (col - 1)) / col;
 
-    for (let r = 0; r < row; r++) {
-        for (let c = 0; c < col; c++) {
-            bricks.push({
-                x: offsetLeft + c * (brickWidth + padding),
-                y: offsetTop + r * (brickHeight + padding),
-                width: brickWidth,
-                height: brickHeight,
-                alive: true
-            });
+		// 벽돌 높이 계산
+		// row가 많아질수록 벽돌 높이도 조금씩 감소
+		const brickHeight = Math.max(14, 28 - row * 2);
+
+		// 벽돌 생성 반복문
+		for (let r = 0; r < row; r++) {
+
+			for (let c = 0; c < col; c++) {
+
+				// 벽돌 객체 추가
+				bricks.push({
+
+					// x 위치 계산
+					x: offsetLeft + c * (brickWidth + padding),
+
+					// y 위치 계산
+					y: offsetTop + r * (brickHeight + padding),
+
+					// 벽돌 크기
+					width: brickWidth,
+					height: brickHeight,
+
+					// 벽돌 생존 여부
+					alive: true
+				});
         }
     }
 }
