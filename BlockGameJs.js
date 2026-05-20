@@ -308,38 +308,46 @@ window.addEventListener("DOMContentLoaded", () => {
         ctx.strokeRect(paddle.x, paddle.y, paddle.width, paddle.height);
     }
 
-    // 벽돌 그리는 함수
+	// 벽돌을 화면에 그리는 함수
 	function drawBricks() {
+
+    // bricks 배열에 있는 모든 벽돌 반복
     bricks.forEach((brick) => {
 
+        // 이미 깨진 벽돌이면 그리지 않음
         if (!brick.alive) return;
 
+        // dirtBrickImg 이미지를 벽돌 위치와 크기에 맞게 출력
         ctx.drawImage(
-            dirtBrickImg,
-            brick.x,
-            brick.y,
-            brick.width,
-            brick.height
+            dirtBrickImg,     // 사용할 이미지
+            brick.x,          // x 좌표
+            brick.y,          // y 좌표
+            brick.width,      // 벽돌 너비
+            brick.height      // 벽돌 높이
         );
     });
-}
+	}
 
-    // 산소 아이템(O2 아이템)을 화면에 그리는 함수
+
+	// 산소 아이템(O2 아이템)을 화면에 그리는 함수
 	function drawO2Items() {
-    o2Items.forEach((item) => {
 
+		// o2Items 배열의 모든 아이템 반복
+		o2Items.forEach((item) => {
+
+        // 아이템 크기 설정
         const size = item.radius * 3;
 
+        // 산소통 이미지를 아이템 위치에 그림
         ctx.drawImage(
-            oxygenTankImg,
-            item.x - size / 2,
-            item.y - size / 2,
-            size,
-            size
-        );
-    });
-}
-	
+            oxygenTankImg,      // 사용할 산소통 이미지
+            item.x - size / 2, // 이미지 중앙 정렬 x좌표
+            item.y - size / 2, // 이미지 중앙 정렬 y좌표
+            size,              // 이미지 너비
+            size               // 이미지 높이
+			);
+		});
+	}
 
     // 산소가 20% 미만 일 시 경고 메시지 출력하기
     function drawLowOxygenWarning() {
