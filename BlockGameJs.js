@@ -51,22 +51,30 @@ window.addEventListener("DOMContentLoaded", () => {
         { container: controlSettingsContainer, controls: controlSettingsContainer.querySelectorAll(".menu-btn"), selectedIndex: 0 }
     ];
     const difficultySettings = {
-        easy:{
-            ballSpeed:6,
-            o2Drain:2
-        },
-        normal:{
-            ballSpeed:8,
-            o2Drain:4
-        },
-        hard:{
-            ballSpeed:10,
-            o2Drain:6
-        },
-        impossible:{
-            ballSpeed:13,
-            o2Drain:8
-        }
+        easy: {
+        ballSpeed: 6,
+        o2Drain: 2,
+        brickRow: 3,
+        brickCol: 6
+    },
+    normal: {
+        ballSpeed: 8,
+        o2Drain: 4,
+        brickRow: 4,
+        brickCol: 8
+    },
+    hard: {
+        ballSpeed: 10,
+        o2Drain: 6,
+        brickRow: 5,
+        brickCol: 10
+    },
+    impossible: {
+        ballSpeed: 13,
+        o2Drain: 8,
+        brickRow: 6,
+        brickCol: 12
+    }
     };
 
     const WIDTH = canvas.width;
@@ -122,6 +130,9 @@ window.addEventListener("DOMContentLoaded", () => {
     
     let bricks = [];
     let o2Items = [];
+	
+	// 현재 난이도 저장
+	let currentDifficulty = "easy";
 
     const sfxPlayer = document.getElementById("sfxPlayer");
 
@@ -150,20 +161,36 @@ window.addEventListener("DOMContentLoaded", () => {
     const o2Text = document.getElementById("o2Text");
 
     function createBricks() {
-        bricks = [];
-        for (let r = 0; r < brickInfo.row; r++) {
-            for (let c = 0; c < brickInfo.col; c++) {
-                bricks.push({
-                    //시작 위치 + 벽돌 너비 * 벽돌 사이 간격
-                    x: brickInfo.offsetLeft + c * (brickInfo.width + brickInfo.padding),
-                    y: brickInfo.offsetTop + r * (brickInfo.height + brickInfo.padding),
-                    width: brickInfo.width,
-                    height: brickInfo.height,
-                    alive: true
-                });
-            }
+		bricks = [];
+
+    const settings = difficultySettings[currentDifficulty];
+
+    const row = settings.brickRow;
+    const col = settings.brickCol;
+
+    const padding = 8;
+    const offsetLeft = 35;
+    const offsetTop = 70;
+
+    // 화면 너비에 맞춰 벽돌 크기 자동 계산
+    const brickWidth =
+        (WIDTH - offsetLeft * 2 - padding * (col - 1)) / col;
+
+    // 난이도가 올라갈수록 세로 크기도 조금 작아짐
+    const brickHeight = Math.max(14, 28 - row * 2);
+
+    for (let r = 0; r < row; r++) {
+        for (let c = 0; c < col; c++) {
+            bricks.push({
+                x: offsetLeft + c * (brickWidth + padding),
+                y: offsetTop + r * (brickHeight + padding),
+                width: brickWidth,
+                height: brickHeight,
+                alive: true
+            });
         }
     }
+}
 
     function resetGame() {
         score = 0;
@@ -686,6 +713,7 @@ window.addEventListener("DOMContentLoaded", () => {
             if (!mode) return;
             // 현재는 EASY만 구현
             console.log("선택 난이도:", mode);
+			currentDifficulty = mode;	//현재 난이도를 기억한다
             const settings = difficultySettings[mode];
             ball.dx = settings.ballSpeed / 2;
             ball.dy = settings.ballSpeed / 2;
