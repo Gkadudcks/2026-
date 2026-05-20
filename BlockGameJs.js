@@ -60,20 +60,20 @@ window.addEventListener("DOMContentLoaded", () => {
         brickCol: 6	 // 벽돌 가로 칸 개수
     },
     normal: {
-        ballSpeed: 8,
-        o2Drain: 4,
+        ballSpeed: 9,
+        o2Drain: 3,
         brickRow: 4,
         brickCol: 8
     },
     hard: {
-        ballSpeed: 10,
-        o2Drain: 6,
+        ballSpeed: 100,
+        o2Drain: 4,
         brickRow: 5,
         brickCol: 10
     },
     impossible: {
-        ballSpeed: 13,
-        o2Drain: 8,
+        ballSpeed: 16,
+        o2Drain: 6,
         brickRow: 6,
         brickCol: 12
     }
@@ -134,7 +134,7 @@ window.addEventListener("DOMContentLoaded", () => {
     let o2Items = [];
 	
 	// 현재 난이도 저장
-	let currentDifficulty = "easy";
+	let currentDifficulty = difficultySettings.easy;
 
     const sfxPlayer = document.getElementById("sfxPlayer");
 
@@ -169,7 +169,7 @@ window.addEventListener("DOMContentLoaded", () => {
 		bricks = [];
 
 		// 현재 난이도에 맞는 설정 가져오기
-		const settings = difficultySettings[currentDifficulty];
+		const settings = currentDifficulty;
 
 		// 현재 난이도의 벽돌 행/열 개수 가져오기
 		const row = settings.brickRow;
@@ -211,9 +211,9 @@ window.addEventListener("DOMContentLoaded", () => {
 					// 벽돌 생존 여부
 					alive: true
 				});
+            }
         }
     }
-}
 
     function resetGame() {
         score = 0;
@@ -221,8 +221,13 @@ window.addEventListener("DOMContentLoaded", () => {
         o2Items = [];
         ball.x = WIDTH / 2;
         ball.y = HEIGHT - 90;
-        ball.dx = 3;
-        ball.dy = -3;
+        /*
+            수정 사항 : ballSpeed가 고정값으로 되어 있음
+            수정 전 : dx, dy 가 각각 3, -3으로 고정 
+            수정 후 : currentDifficulty.ballSpeed / 2 으로 수정
+        */
+        ball.dx = currentDifficulty.ballSpeed / 2;
+        ball.dy = -currentDifficulty.ballSpeed / 2;
         paddle.x = WIDTH / 2 - paddle.width / 2;
         paddleMoveHistory = Array(PADDLE_HISTORY_FRAME).fill(0);
         gameOverMessage = null;
@@ -732,15 +737,12 @@ window.addEventListener("DOMContentLoaded", () => {
     difficultyBtns.forEach((btn) => {
         btn.addEventListener("click", () => {
             document.body.style.backgroundImage = "none"; // body 배경 제거
-            const mode = btn.dataset.mode;
+            const mode = btn.dataset.mode;  // button의 data-mode 값 가져오기
             if (!mode) return;
             // 현재는 EASY만 구현
             console.log("선택 난이도:", mode);
-			currentDifficulty = mode;	//현재 난이도를 기억한다
-            const settings = difficultySettings[mode];
-            ball.dx = settings.ballSpeed / 2;
-            ball.dy = settings.ballSpeed / 2;
-            currentO2Drain = settings.o2Drain;
+			currentDifficulty = difficultySettings[mode];	//현재 난이도를 기억한다
+            currentO2Drain = currentDifficulty.o2Drain;
 
             difficultyContainer.style.display = "none";
             menuContainer.style.display = "none";
