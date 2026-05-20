@@ -16,6 +16,16 @@ window.addEventListener("DOMContentLoaded", () => {
     const ctx = canvas.getContext("2d");
     const effectCtx = effectCanvas.getContext("2d");
     
+	// 이미지 불러오기
+	const dirtBrickImg = new Image();
+	dirtBrickImg.src = "images/dirt-brick.png";
+
+	const metalBrickImg = new Image();
+	metalBrickImg.src = "images/metal-brick.png";
+
+	const oxygenTankImg = new Image();
+	oxygenTankImg.src = "images/oxygen-tank.png";
+	
     // 게임 진행 시 background Image
     const gameBg = new Image();
     gameBg.src = "images/game_play_bg.png";
@@ -299,34 +309,37 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 
     // 벽돌 그리는 함수
-    function drawBricks() {
-        bricks.forEach((brick) => {
-            if (!brick.alive) return;
-            ctx.fillStyle = "#b65b2e";
-            ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
-            ctx.strokeStyle = "#ffb067";
-            ctx.strokeRect(brick.x, brick.y, brick.width, brick.height);
-        });
-    }
+	function drawBricks() {
+    bricks.forEach((brick) => {
+
+        if (!brick.alive) return;
+
+        ctx.drawImage(
+            dirtBrickImg,
+            brick.x,
+            brick.y,
+            brick.width,
+            brick.height
+        );
+    });
+}
 
     // 산소 아이템(O2 아이템)을 화면에 그리는 함수
-    function drawO2Items() {
-        o2Items.forEach((item) => {
-            ctx.beginPath();
-            ctx.arc(item.x, item.y, item.radius, 0, Math.PI * 2);
-            ctx.fillStyle = "#7ee7ff";
-            ctx.shadowColor = "#7ee7ff";
-            ctx.shadowBlur = 16;
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            ctx.closePath();
+	function drawO2Items() {
+    o2Items.forEach((item) => {
 
-            ctx.fillStyle = "#001018";
-            ctx.font = "bold 10px Orbitron";
-            ctx.textAlign = "center";
-            ctx.fillText("O2", item.x, item.y + 3);
-        });
-    }
+        const size = item.radius * 3;
+
+        ctx.drawImage(
+            oxygenTankImg,
+            item.x - size / 2,
+            item.y - size / 2,
+            size,
+            size
+        );
+    });
+}
+	
 
     // 산소가 20% 미만 일 시 경고 메시지 출력하기
     function drawLowOxygenWarning() {
