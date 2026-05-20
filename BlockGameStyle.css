@@ -117,10 +117,12 @@ body{
     transform:translate(-50%, -50%);
 }
 
-.menu-btn:hover {
+.menu-btn:hover,
+.menu-btn:focus {
     background-color: white;
     color: black;
     transform:scale(1.03);
+    outline:none;
 }
 
 .difficulty-container{
@@ -151,10 +153,12 @@ body{
     transition:0.25s;
 }
 
-.difficulty-btn:hover{
+.difficulty-btn:hover,
+.difficulty-btn:focus{
     background:white;
     color:black;
     transform:scale(1.03);
+    outline:none;
 }
 
 /************************************************
@@ -165,6 +169,7 @@ body{
     flex-direction:column;
     align-items:center;
     gap:14px;
+    position:relative;
 }
 
 .game-ui{
@@ -228,18 +233,41 @@ body{
     to{ opacity:0.45; }
 }
 
-#gameCanvas {
+/*백그라운드, 게임, 이펙트 canvas를 한 곳에 모으는 기능*/
+.canvas-stack {
+    position:relative;
+    width:800px;
+    height:600px;
     border: 4px solid rgba(255,140,58,0.9);
     background-color: black;
     box-shadow:0 0 30px rgba(255,140,58,0.35);
 }
 
-#backToMenuBtn{
+.canvas-stack canvas {
+    position:absolute;
+    left:0;
+    top:0;
+}
+
+#backgroundCanvas,
+#effectCanvas {
+    pointer-events:none;
+}
+
+.game-result-buttons{
     position:absolute;
     top:60%;
     left:50%;
     transform:translateX(-50%);
+    display:none;
+    gap:12px;
+    z-index:20;
+}
 
+#backToMenuBtn,
+#resumeBtn,
+#retryBtn,
+#nextStageBtn{
     padding:14px 28px;
 
     border:none;
@@ -252,13 +280,12 @@ body{
     font-family:Orbitron;
 
     cursor:pointer;
-
-    display:none;
-
-    z-index:20;
 }
 
-#backToMenuBtn:hover{
+#backToMenuBtn:hover,
+#resumeBtn:hover,
+#retryBtn:hover,
+#nextStageBtn:hover{
     background:#ffb067;
 }
 

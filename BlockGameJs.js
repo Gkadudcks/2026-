@@ -2,9 +2,19 @@ window.addEventListener("DOMContentLoaded", () => {
     const startBtn = document.getElementById("startBtn");
     const backToMenuBtn = document.getElementById("backToMenuBtn");
     const menuContainer = document.querySelector(".menu-container");
+    const menuBtns = document.querySelectorAll(".menu-buttons .menu-btn");
     const gameContainer = document.getElementById("gameContainer");
+    const canvasStack = document.getElementById("canvasStack");
+    const backgroundCanvas = document.getElementById("backgroundCanvas");
     const canvas = document.getElementById("gameCanvas");
+    const effectCanvas = document.getElementById("effectCanvas");
+    const gameResultButtons = document.getElementById("gameResultButtons");
+    const resumeBtn = document.getElementById("resumeBtn");
+    const retryBtn = document.getElementById("retryBtn");
+    const nextStageBtn = document.getElementById("nextStageBtn");
+    const bgCtx = backgroundCanvas.getContext("2d");
     const ctx = canvas.getContext("2d");
+    const effectCtx = effectCanvas.getContext("2d");
     
     // 게임 진행 시 background Image
     const gameBg = new Image();
@@ -17,22 +27,35 @@ window.addEventListener("DOMContentLoaded", () => {
     const difficultyContainer = document.getElementById("difficultyContainer");
     const difficultyBackBtn = document.getElementById("difficultyBackBtn");
     const difficultyBtns = document.querySelectorAll(".difficulty-btn");
+    const settingsContainer = document.getElementById("settingsContainer");
+    const audioSettingsContainer = document.querySelector(".audio-settings-container");
+    const backgroundSettingsContainer = document.querySelector(".background-settings-container");
+    const controlSettingsContainer = document.querySelector(".control-settings-container");
+    //현재 보이는 메뉴 화면 찾아서 키보드 조작 처리하기 위한 배열
+    const menuScreens = [
+        { container: menuContainer, controls: menuBtns, selectedIndex: 0 },
+        { container: difficultyContainer, controls: difficultyBtns, selectedIndex: 0 },
+        { container: settingsContainer, controls: settingsContainer.querySelectorAll(".menu-btn"), selectedIndex: 0 },
+        { container: audioSettingsContainer, controls: audioSettingsContainer.querySelectorAll("button, select, input"), selectedIndex: 0 },
+        { container: backgroundSettingsContainer, controls: backgroundSettingsContainer.querySelectorAll(".menu-btn"), selectedIndex: 0 },
+        { container: controlSettingsContainer, controls: controlSettingsContainer.querySelectorAll(".menu-btn"), selectedIndex: 0 }
+    ];
     const difficultySettings = {
         easy:{
             ballSpeed:6,
-            o2Drain:4.5
+            o2Drain:2
         },
         normal:{
             ballSpeed:8,
-            o2Drain:6
+            o2Drain:4
         },
         hard:{
             ballSpeed:10,
-            o2Drain:8
+            o2Drain:6
         },
         impossible:{
             ballSpeed:13,
-            o2Drain:12
+            o2Drain:8
         }
     };
 
@@ -46,6 +69,10 @@ window.addEventListener("DOMContentLoaded", () => {
     let lastTime = 0;
     let lowOxygenShake = 0;
     let gameOverMessage = null;
+    let isPaused = false;
+    let currentO2Drain = difficultySettings.easy.o2Drain;
+    const PADDLE_HISTORY_FRAME = 10;
+    let paddleMoveHistory = Array(PADDLE_HISTORY_FRAME).fill(0);
 
     const ball = {
         // ball의 처음 위치 (가로 : canvas의 중앙 / 세로 : 캔버스 높이 - 90)
@@ -137,9 +164,51 @@ window.addEventListener("DOMContentLoaded", () => {
         ball.dx = 3;
         ball.dy = -3;
         paddle.x = WIDTH / 2 - paddle.width / 2;
+        paddleMoveHistory = Array(PADDLE_HISTORY_FRAME).fill(0);
         gameOverMessage = null;
+        isPaused = false;
+        hideResultButtons();
         createBricks();
         updateUI();
+    }
+
+    function hideResultButtons() {
+        gameResultButtons.style.display = "none";
+        resumeBtn.style.display = "none";
+        retryBtn.style.display = "none";
+        nextStageBtn.style.display = "none";
+        backToMenuBtn.style.display = "none";
+    }
+
+    function showResultButtons(isSuccess) {
+        gameResultButtons.style.display = "flex";
+        resumeBtn.style.display = "none";
+        retryBtn.style.display = isSuccess ? "none" : "block";
+        nextStageBtn.style.display = isSuccess ? "block" : "none";
+        backToMenuBtn.style.display = "block";
+    }
+
+    function showPauseButtons() {
+        gameResultButtons.style.display = "flex";
+        resumeBtn.style.display = "block";
+        retryBtn.style.display = "none";
+        nextStageBtn.style.display = "none";
+        backToMenuBtn.style.display = "block";
+    }
+
+    function startRound() {
+        hideResultButtons();
+        canvasStack.style.transform = "translate(0, 0)";
+        effectCtx.clearRect(0, 0, WIDTH, HEIGHT);
+        resetGame();
+        isPlaying = true;
+        isPaused = false;
+        gameOverMessage = null;
+        lastTime = performance.now();
+        if (animationId) {
+            cancelAnimationFrame(animationId);
+        }
+        animationId = requestAnimationFrame(gameLoop);
     }
 
     function updateUI() {
@@ -147,6 +216,40 @@ window.addEventListener("DOMContentLoaded", () => {
         o2Text.textContent = `${Math.ceil(o2)}%`; /* o2 퍼센트 텍스트 업데이트 문자열 */
         o2Bar.style.width = `${o2}%`;   // 산소 길이 변경
         o2Bar.classList.toggle("low", o2 < 20); // 이건 특정 조건이면 CSS 클래스 추가/제거하는 코드
+    }
+
+    function focusMenuButton() {
+        menuBtns[menuScreens[0].selectedIndex].focus();
+    }
+
+    function getActiveMenuScreen() {
+        return menuScreens.find((screen) => getComputedStyle(screen.container).display !== "none");
+    }
+
+    function focusMenuScreenControl(screen) {
+        screen.controls[screen.selectedIndex].focus();
+    }
+    // 현재 보이는 메뉴 화면에서 화살표로 포서스 이동, enter로 실행
+    // select, input은 포커스 이동만, enter 클릭은 버튼에만 적용
+    function handleMenuKeyboard(event) {
+        const screen = getActiveMenuScreen();
+        if (!screen || !["ArrowUp", "ArrowDown", "Enter"].includes(event.key)) return false;
+
+        event.preventDefault();
+        if (event.key === "ArrowUp") {
+            screen.selectedIndex = (screen.selectedIndex - 1 + screen.controls.length) % screen.controls.length;
+            focusMenuScreenControl(screen);
+        } else if (event.key === "ArrowDown") {
+            screen.selectedIndex = (screen.selectedIndex + 1) % screen.controls.length;
+            focusMenuScreenControl(screen);
+        } else if (screen.controls[screen.selectedIndex].tagName === "BUTTON") {
+            screen.controls[screen.selectedIndex].click();
+            setTimeout(() => {
+                const nextScreen = getActiveMenuScreen();
+                if (nextScreen) focusMenuScreenControl(nextScreen);
+            }, 0);
+        }
+        return true;
     }
 
     function drawBackground() {
@@ -170,9 +273,9 @@ window.addEventListener("DOMContentLoaded", () => {
             수정 전 drawBackground : canvas에 직접 배경을 그리는 방식
             수정 후 drawBackground : 게임 시작 버튼 누를 시 게임 초기 배경 날린 후, 게임 진행 이미지 출력하는 방식
         */
-        ctx.clearRect(0,0,WIDTH,HEIGHT);
+        bgCtx.clearRect(0,0,WIDTH,HEIGHT);
 
-        ctx.drawImage(gameBg, 0, 0, WIDTH, HEIGHT);
+        bgCtx.drawImage(gameBg, 0, 0, WIDTH, HEIGHT);
     }
 
     // 공 그리는 함수
@@ -228,16 +331,16 @@ window.addEventListener("DOMContentLoaded", () => {
     // 산소가 20% 미만 일 시 경고 메시지 출력하기
     function drawLowOxygenWarning() {
         if (o2 >= 20) return;
-        ctx.fillStyle = "rgba(255, 80, 40, 0.15)";
-        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        effectCtx.fillStyle = "rgba(255, 80, 40, 0.15)";
+        effectCtx.fillRect(0, 0, WIDTH, HEIGHT);
 
-        ctx.fillStyle = "#ff5b38";
-        ctx.font = "bold 36px Orbitron";
-        ctx.textAlign = "center";
-        ctx.shadowColor = "#ff5b38";
-        ctx.shadowBlur = 16;
-        ctx.fillText("⚠ LOW OXYGEN ⚠", WIDTH / 2, HEIGHT / 2);
-        ctx.shadowBlur = 0;
+        effectCtx.fillStyle = "#ff5b38";
+        effectCtx.font = "bold 36px Orbitron";
+        effectCtx.textAlign = "center";
+        effectCtx.shadowColor = "#ff5b38";
+        effectCtx.shadowBlur = 16;
+        effectCtx.fillText("⚠ LOW OXYGEN ⚠", WIDTH / 2, HEIGHT / 2);
+        effectCtx.shadowBlur = 0;
     }
 
     //벽돌이 깨졌을 때 확률적으로 O2 아이템 생성
@@ -257,6 +360,17 @@ window.addEventListener("DOMContentLoaded", () => {
         if (keys.left) paddle.x -= paddle.speed;
         if (keys.right) paddle.x += paddle.speed;
         paddle.x = Math.max(0, Math.min(WIDTH - paddle.width, paddle.x));   //패들이 화면 밖으로 못 나가게 제한
+    }
+    // 패들 움직임을 ball과 충돌에 반영하기 위한 최근 10프레임 패들 움직임 기록
+    function recordPaddleMovement(beforeX) {
+        paddleMoveHistory.push(paddle.x - beforeX);
+        if (paddleMoveHistory.length > PADDLE_HISTORY_FRAME) {
+            paddleMoveHistory.shift();
+        }
+    }
+
+    function getAveragePaddleMovement() {
+        return paddleMoveHistory.reduce((sum, value) => sum + value, 0) / paddleMoveHistory.length;
     }
 
     //공 움직이기 + 충돌처리
@@ -281,7 +395,8 @@ window.addEventListener("DOMContentLoaded", () => {
             ball.dy = -Math.abs(ball.dy); // 반드시 위를 보장하기 위해 절댓값에 -부호 붙임
             // 튕기는 각도 계산
             const hitPoint = (ball.x - (paddle.x + paddle.width / 2)) / (paddle.width / 2);
-            ball.dx = hitPoint * 4;
+            // 패들 움직임 영향이 너무 크지 않도록 보정계수 0.25를 곱해서 적용
+            ball.dx = hitPoint * 4 + getAveragePaddleMovement() * 0.25;
         }
 
         //게임 오버 체크 : 공이 화면아래로 갔을 경우
@@ -406,14 +521,50 @@ window.addEventListener("DOMContentLoaded", () => {
 
             gameOverMessage = message;
 
-            canvas.style.transform = "translate(0,0)";
+            canvasStack.style.transform = "translate(0,0)";
 
-            backToMenuBtn.style.display = "block";
+            showResultButtons(message === "STAGE CLEAR");
         }
 
     //산소(O2) 시스템 전체 관리
+    function drawCenterMessage(message) {
+        effectCtx.fillStyle = "rgba(0, 0, 0, 0.72)";
+        effectCtx.fillRect(0, 0, WIDTH, HEIGHT);
+        effectCtx.fillStyle = "#ffffff";
+        effectCtx.font = "bold 38px Orbitron";
+        effectCtx.textAlign = "center";
+        effectCtx.fillText(
+            message,
+            WIDTH / 2,
+            HEIGHT / 2 - 20
+        );
+    }
+
+    function pauseGame() {
+        if (!isPlaying || gameOverMessage) return;
+        isPlaying = false;
+        isPaused = true;
+        if (animationId) {
+            cancelAnimationFrame(animationId);
+        }
+        canvasStack.style.transform = "translate(0, 0)";
+        effectCtx.clearRect(0, 0, WIDTH, HEIGHT);
+        drawCenterMessage("PAUSED");
+        showPauseButtons();
+    }
+
+    function resumeGame() {
+        if (!isPaused) return;
+        hideResultButtons();
+        effectCtx.clearRect(0, 0, WIDTH, HEIGHT);
+        isPaused = false;
+        isPlaying = true;
+        lastTime = performance.now();
+        animationId = requestAnimationFrame(gameLoop);
+    }
+
     function updateOxygen(deltaTime) {
-        o2 -= deltaTime * 4.5; // 1초에 4.5% 감소
+        o2 -= deltaTime * currentO2Drain; // 난이도에 따라 1초당 o2 감소
         o2 = Math.max(0, o2); // 최솟값 제한 0 밑으로 못 내려감
 
         //산소 부족 경고 : 20% 미만일 시 화면 흔들림 활성화
@@ -430,13 +581,16 @@ window.addEventListener("DOMContentLoaded", () => {
     function gameLoop(timestamp) {
         // 게임 종료 상태면 루프 종료 (게임 오버 메세지가 없음 && 플레이 중이 아님)
         if (!isPlaying && !gameOverMessage) return;
+        if (isPaused) return;
 
         // deltaTime : 이전 프레임과 현재 프레임 시간 차이 (ms)
         const deltaTime = (timestamp - lastTime) / 1000 || 0;
         lastTime = timestamp; // 현재 시간 저장
 
         updateOxygen(deltaTime); //산소 감소 처리.
+        const paddleBeforeX = paddle.x;
         movePaddle(); // 패들 이동 처리
+        recordPaddleMovement(paddleBeforeX);
         moveBall(); // 공 이동 + 벽 충돌 처리
         checkBrickCollision();  // 벽돌 충돌 검사
         moveO2Items();  // 산소 아이템 이동 처리
@@ -446,17 +600,19 @@ window.addEventListener("DOMContentLoaded", () => {
         if (lowOxygenShake > 0) {
             const shakeX = Math.random() * 8 - 4;
             const shakeY = Math.random() * 8 - 4;
-            canvas.style.transform = `translate(${shakeX}px, ${shakeY}px)`;
+            canvasStack.style.transform = `translate(${shakeX}px, ${shakeY}px)`;
             //Canvas 흔들기 : Canvas 위치를 랜덤으로 이동시킴
             lowOxygenShake--;
             // 흔들림 카운트 감소 한 프레임씩 줄어듦
         } else {
             //흔들림 끝나면 원위치
-            canvas.style.transform = "translate(0, 0)";
+            canvasStack.style.transform = "translate(0, 0)";
         }
 
         //렌더링
         drawBackground();
+        ctx.clearRect(0, 0, WIDTH, HEIGHT);
+        effectCtx.clearRect(0, 0, WIDTH, HEIGHT);
         drawBricks();
         drawO2Items();
         drawPaddle();
@@ -466,17 +622,7 @@ window.addEventListener("DOMContentLoaded", () => {
         //게임 오버 메세지 출력
         if (gameOverMessage) {
             // 게임 화면 어둡게 덮기.
-            ctx.fillStyle = "rgba(0, 0, 0, 0.72)";
-            ctx.fillRect(0, 0, WIDTH, HEIGHT);
-            // 글자 색
-            ctx.fillStyle = "#ffffff";
-            ctx.font = "bold 38px Orbitron";
-            ctx.textAlign = "center";
-            ctx.fillText(
-                gameOverMessage,
-                WIDTH / 2,
-                HEIGHT / 2 - 20
-            );
+            drawCenterMessage(gameOverMessage);
             return;
         }
         // 다음 프레임 요청
@@ -516,23 +662,18 @@ window.addEventListener("DOMContentLoaded", () => {
         btn.addEventListener("click", () => {
             document.body.style.backgroundImage = "none"; // body 배경 제거
             const mode = btn.dataset.mode;
+            if (!mode) return;
             // 현재는 EASY만 구현
             console.log("선택 난이도:", mode);
             const settings = difficultySettings[mode];
             ball.dx = settings.ballSpeed / 2;
-            ball.dy = settings.ballSpedd / 2;
+            ball.dy = settings.ballSpeed / 2;
+            currentO2Drain = settings.o2Drain;
 
             difficultyContainer.style.display = "none";
             menuContainer.style.display = "none";
             gameContainer.style.display = "flex";
-            resetGame();
-            isPlaying = true;
-            gameOverMessage = null;
-            lastTime = performance.now();
-            if (animationId) {
-                cancelAnimationFrame(animationId);
-            }
-            animationId = requestAnimationFrame(gameLoop);
+            startRound();
         });
     });
 
@@ -542,18 +683,48 @@ window.addEventListener("DOMContentLoaded", () => {
         // 메인 메뉴 복귀
         menuContainer.style.display = "flex";
         document.body.style.backgroundImage = window.currentMenuBackground ||'url("images/space-background1.png")';
+        focusMenuButton();
     });
 
     backToMenuBtn.addEventListener("click", () => {
+        isPlaying = false;
+        isPaused = false;
+        if (animationId) {
+            cancelAnimationFrame(animationId);
+        }
         gameContainer.style.display = "none";
         menuContainer.style.display = "flex";
         difficultyContainer.style.display = "none";
         document.body.style.backgroundImage = window.currentMenuBackground ||'url("images/space-background1.png")';
-        backToMenuBtn.style.display = "none";
+        canvasStack.style.transform = "translate(0, 0)";
+        hideResultButtons();
         gameOverMessage = null;
+        focusMenuButton();
+    });
+
+    resumeBtn.addEventListener("click", () => {
+        resumeGame();
+    });
+
+    retryBtn.addEventListener("click", () => {
+        startRound();
+    });
+
+    nextStageBtn.addEventListener("click", () => {
+        startRound();
     });
 
     document.addEventListener("keydown", (event) => {
+        if (handleMenuKeyboard(event)) return;
+
+        if (event.key === "Escape") {
+            if (isPaused) {
+                resumeGame();
+            } else {
+                pauseGame();
+            }
+            return;
+        }
         if (window.controlMode === "mouse") return;
         if (event.key === "ArrowLeft") keys.left = true;
         if (event.key === "ArrowRight") keys.right = true;
@@ -572,4 +743,5 @@ window.addEventListener("DOMContentLoaded", () => {
         paddle.x = event.clientX - rect.left - paddle.width / 2;
         paddle.x = Math.max(0, Math.min(WIDTH - paddle.width, paddle.x));
     });
+    focusMenuButton();
 });
