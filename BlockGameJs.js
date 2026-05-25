@@ -30,16 +30,14 @@ window.addEventListener("DOMContentLoaded", () => {
     const dirtBrickImg = new Image();
     dirtBrickImg.src = "images/dirt-brick.png";
 
-<<<<<<< HEAD
-	const oxygenItemImg = new Image();
-	oxygenItemImg.src = "images/oxygen-item.png";
-=======
     const metalBrickImg = new Image();
     metalBrickImg.src = "images/metal-brick.png";
 
     const oxygenTankImg = new Image();
     oxygenTankImg.src = "images/oxygen-tank.png";
->>>>>>> 499d0936dd0a8feed68b980ef11984a56a475be6
+
+    const oxygenItemImg = new Image();
+    oxygenItemImg.src = "images/oxygen-item.png";
 
     const smallballitemImg = new Image();
     smallballitemImg.src = "images/item_smallball.png";
@@ -402,45 +400,28 @@ window.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-<<<<<<< HEAD
         // 이미 깨진 벽돌이면 그리지 않음
         if (!brick.alive) return;
 
         // dirtBrickImg 이미지를 벽돌 위치와 크기에 맞게 출력
-        ctx.drawImage(
-            dirtBrickImg,     // 사용할 이미지
-            brick.x,          // x 좌표
-            brick.y,          // y 좌표
-            brick.width,      // 벽돌 너비
-            brick.height      // 벽돌 높이
-        );
+        ctx.drawImage(dirtBrickImg, brick.x, brick.y, brick.width, brick.height);
     });
-	}
+    }
 
+    // 현재 떨어지는 아이템들을 타입에 맞는 이미지로 그리기
+    function drawItems() {
+        dropItems.forEach((item) => {
+            const size = item.radius * 3;
+            let img;
+            if (item.type === "o2")        img = oxygenItemImg;
+            if (item.type === "widebar")   img = widebaritemImg;
+            if (item.type === "smallball") img = smallballitemImg;
+            if (item.type === "x3")        img = x3itemImg;
+            ctx.drawImage(img, item.x - size / 2, item.y - size / 2, size, size);
+        });
+    }
 
-	// 산소 아이템(O2 아이템)을 화면에 그리는 함수
-	function drawItems() {
-
-		// o2Items 배열의 모든 아이템 반복
-		dropItems.forEach((item) => {
-
-        // 아이템 크기 설정
-        const  size = item.radius * 3;
-        let img;
-        // 산소통 이미지를 아이템 위치에 그림
-        if (item.type === "o2")       img = oxygenItemImg;
-        if (item.type === "widebar")  img = widebaritemImg;
-        if (item.type === "smallball") img = smallballitemImg;
-        if (item.type === "x3")       img = x3itemImg;
-
-        ctx.drawImage(img, item.x - size / 2, item.y - size / 2, size, size);
-		});
-	}
-
-    // 산소가 20% 미만 일 시 경고 메시지 출력하기
-=======
     // 산소 20% 미만 시 경고 표시 (effectCanvas에 빨간 오버레이 + 텍스트)
->>>>>>> 499d0936dd0a8feed68b980ef11984a56a475be6
     function drawLowOxygenWarning() {
         if (o2 >= 20) return;
         effectCtx.fillStyle = "rgba(255, 80, 40, 0.15)";
@@ -462,13 +443,8 @@ window.addEventListener("DOMContentLoaded", () => {
     function spawnItem(x, y) {
         if (Math.random() > 0.35) return; // 65% 확률로 아이템 없음
 
-<<<<<<< HEAD
-        // 버프 아이템 목록 
-        const buffTypes = ["o2", "widebar","x3"];
-=======
         const buffTypes = ["o2", "widebar", "x3"];      // 버프 아이템 목록
         const debuffTypes = ["smallball"];               // 디버프 아이템 목록
->>>>>>> 499d0936dd0a8feed68b980ef11984a56a475be6
 
         // 난이도별 디버프 등장 확률 (easy는 디버프 없음)
         const debuffChance = {
