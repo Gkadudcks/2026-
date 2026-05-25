@@ -23,8 +23,8 @@ window.addEventListener("DOMContentLoaded", () => {
 	const metalBrickImg = new Image();
 	metalBrickImg.src = "images/metal-brick.png";
 
-	const oxygenTankImg = new Image();
-	oxygenTankImg.src = "images/oxygen-tank.png";
+	const oxygenItemImg = new Image();
+	oxygenItemImg.src = "images/oxygen-item.png";
 
     const smallballitemImg = new Image();
     smallballitemImg.src = "images/item_smallball.png";
@@ -162,7 +162,7 @@ window.addEventListener("DOMContentLoaded", () => {
     ui.innerHTML = `
         <div class="score-box">SCORE <span id="scoreText">0</span></div>
         <div class="o2-panel">
-            <span class="o2-label">O2</span>
+            <img class="o2-label" src="images/oxygen-tank.png" alt="O2">
             <div class="o2-bar-outer">
                 <div class="o2-bar-inner" id="o2Bar"></div>
             </div>
@@ -414,7 +414,7 @@ window.addEventListener("DOMContentLoaded", () => {
         const  size = item.radius * 3;
         let img;
         // 산소통 이미지를 아이템 위치에 그림
-        if (item.type === "o2")       img = oxygenTankImg;
+        if (item.type === "o2")       img = oxygenItemImg;
         if (item.type === "widebar")  img = widebaritemImg;
         if (item.type === "smallball") img = smallballitemImg;
         if (item.type === "x3")       img = x3itemImg;
@@ -443,7 +443,7 @@ window.addEventListener("DOMContentLoaded", () => {
         // 35% 확률로 아이템 생성
         if (Math.random() > 0.35) return;
 
-        // 버프 아이템 목록 (x3 미구현으로 제외)
+        // 버프 아이템 목록 
         const buffTypes = ["o2", "widebar","x3"];
 
         // 디버프 아이템 목록
