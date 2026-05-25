@@ -126,6 +126,7 @@ window.addEventListener("DOMContentLoaded", () => {
     let isPaused = false;           // 일시정지 여부
     let currentO2Drain = difficultySettings.easy.o2Drain;  // 현재 산소 감소 속도
     const PADDLE_HISTORY_FRAME = 10;    // 패들 이동 기록 프레임 수
+    const MIN_BALL_DY = 2;              // 공이 완전히 수평으로 흐르지 않도록 보장
     let paddleMoveHistory = Array(PADDLE_HISTORY_FRAME).fill(0); // 최근 10프레임 패들 이동량
 
     // 공 배열 (x3 아이템으로 여러 개가 될 수 있어 배열로 관리)
@@ -145,6 +146,8 @@ window.addEventListener("DOMContentLoaded", () => {
         y: HEIGHT - 35,         // 위치: 화면 하단 고정
         speed: 8
     };
+    // 마우스로도 paddle history 반영되도록 이전 프레임 패들 위치 저장
+    let lastPaddleX = paddle.x;
 
     // 키보드 입력 상태 (keydown/keyup으로 true/false 변경)
     const keys = {
@@ -243,6 +246,7 @@ window.addEventListener("DOMContentLoaded", () => {
         });
         paddle.width = 110;     // widebar 아이템 효과 초기화
         paddle.x = WIDTH / 2 - paddle.width / 2;
+        lastPaddleX = paddle.x;
         paddleMoveHistory = Array(PADDLE_HISTORY_FRAME).fill(0);
         gameOverMessage = null;
         isPaused = false;
@@ -493,12 +497,15 @@ window.addEventListener("DOMContentLoaded", () => {
                 ball.x <= paddle.x + paddle.width;
 
             if (hitPaddle) {
-                ball.dy = -Math.abs(ball.dy); // 반드시 위로 튕기게
-                // 패들 중심 기준 타격 위치 (-1 ~ 1) + 패들 이동 방향을 수평 속도에 반영
-                const hitPoint = (ball.x - (paddle.x + paddle.width / 2)) / (paddle.width / 2);
-                //패들의 최근 10프레임 움직임을 공 움직임에 조금 반영.
-                //보정계수 0.25 -> 15로 줄임
-                ball.dx = hitPoint * 4 + getAveragePaddleMovement() * 0.15;
+                // 속도 유지를 위한 기존 속도 계산
+                const speed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
+                // 공이 완전히 수평으로 흐르지 않게 최소 y축 움직임 보장
+                const dxLimit = Math.sqrt(speed * speed - MIN_BALL_DY * MIN_BALL_DY);
+                // 패들 움직임에 보정계수 0.15를 곱해 추가
+                ball.dx = ball.dx + getAveragePaddleMovement() * 0.3;
+                // 속도 기반 dx, dy 계산
+                ball.dx = Math.max(-dxLimit, Math.min(dxLimit, ball.dx));
+                ball.dy = -Math.sqrt(speed * speed - ball.dx * ball.dx);
             }
         });
 
@@ -686,9 +693,10 @@ window.addEventListener("DOMContentLoaded", () => {
 
         // 게임 로직 업데이트
         updateOxygen(deltaTime);
-        const paddleBeforeX = paddle.x;
         movePaddle();
-        recordPaddleMovement(paddleBeforeX);
+        // 마우스 이벤트로 바뀐 paddle.x까지 포함해 이전 프레임 대비 이동량 기록
+        recordPaddleMovement(lastPaddleX);
+        lastPaddleX = paddle.x;
         moveBall();
         checkBrickCollision();
         moveItems();
