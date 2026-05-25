@@ -64,7 +64,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const controlSettingsContainer = document.querySelector(".control-settings-container");
 
     // 현재 보이는 메뉴 화면을 찾아 키보드 방향키 조작에 사용하는 배열
-    // 각 항목: 화면 컨테이너, 내부 컨트롤 목록, 현재 선택 인덱스
+    // container: 화면 전체 div / controls: 이동할 요소들 / selectedIndex: 현재 선택된 요소 번호
     const menuScreens = [
         { container: menuContainer, controls: menuBtns, selectedIndex: 0 },
         { container: difficultyContainer, controls: difficultyBtns, selectedIndex: 0 },
@@ -304,12 +304,12 @@ window.addEventListener("DOMContentLoaded", () => {
         menuBtns[menuScreens[0].selectedIndex].focus();
     }
 
-    // 현재 화면에서 display가 none이 아닌 메뉴 화면 반환
+    // display가 none이 아닌 화면을 찾아 현재 보이는 메뉴 화면 반환
     function getActiveMenuScreen() {
         return menuScreens.find((screen) => getComputedStyle(screen.container).display !== "none");
     }
 
-    // 현재 메뉴 화면에서 선택된 컨트롤에 포커스
+    // 현재 메뉴 화면에서 선택된 인덱스로 포커스 이동
     function focusMenuScreenControl(screen) {
         screen.controls[screen.selectedIndex].focus();
     }
@@ -318,9 +318,12 @@ window.addEventListener("DOMContentLoaded", () => {
     // select, input은 포커스 이동만 되고 Enter 클릭은 button에만 동작
     function handleMenuKeyboard(event) {
         const screen = getActiveMenuScreen();
+        //화살표 위 아래 혹은 enter인 경우에만 처리
         if (!screen || !["ArrowUp", "ArrowDown", "Enter"].includes(event.key)) return false;
-
+        //화살표,enter가 기본동작 못하고 아래에 정해진 동작을 하게 하기 위해 preventDefault사용
         event.preventDefault();
+
+        //%연산으로 순환
         if (event.key === "ArrowUp") {
             // 위 방향키: 이전 항목으로 (0번이면 마지막으로 순환)
             screen.selectedIndex = (screen.selectedIndex - 1 + screen.controls.length) % screen.controls.length;
@@ -332,6 +335,7 @@ window.addEventListener("DOMContentLoaded", () => {
         } else if (screen.controls[screen.selectedIndex].tagName === "BUTTON") {
             // Enter: 현재 선택이 버튼일 때만 클릭 처리
             screen.controls[screen.selectedIndex].click();
+            //setTimeout으로 클릭 이벤트, 화면 전환 후에 포커스 다시 맞추도록함
             setTimeout(() => {
                 const nextScreen = getActiveMenuScreen();
                 if (nextScreen) focusMenuScreenControl(nextScreen);
@@ -489,7 +493,9 @@ window.addEventListener("DOMContentLoaded", () => {
                 ball.dy = -Math.abs(ball.dy); // 반드시 위로 튕기게
                 // 패들 중심 기준 타격 위치 (-1 ~ 1) + 패들 이동 방향을 수평 속도에 반영
                 const hitPoint = (ball.x - (paddle.x + paddle.width / 2)) / (paddle.width / 2);
-                ball.dx = hitPoint * 4 + getAveragePaddleMovement() * 0.25;
+                //패들의 최근 10프레임 움직임을 공 움직임에 조금 반영.
+                //보정계수 0.25 -> 15로 줄임
+                ball.dx = hitPoint * 4 + getAveragePaddleMovement() * 0.15;
             }
         });
 
