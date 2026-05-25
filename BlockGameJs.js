@@ -392,27 +392,6 @@ window.addEventListener("DOMContentLoaded", () => {
         dropItems.forEach((item) => {
             const size = item.radius * 3;
             let img;
-            if (item.type === "o2")        img = oxygenTankImg;
-            if (item.type === "widebar")   img = widebaritemImg;
-            if (item.type === "smallball") img = smallballitemImg;
-            if (item.type === "x3")        img = x3itemImg;
-            ctx.drawImage(img, item.x - size / 2, item.y - size / 2, size, size);
-        });
-    }
-
-        // 이미 깨진 벽돌이면 그리지 않음
-        if (!brick.alive) return;
-
-        // dirtBrickImg 이미지를 벽돌 위치와 크기에 맞게 출력
-        ctx.drawImage(dirtBrickImg, brick.x, brick.y, brick.width, brick.height);
-    });
-    }
-
-    // 현재 떨어지는 아이템들을 타입에 맞는 이미지로 그리기
-    function drawItems() {
-        dropItems.forEach((item) => {
-            const size = item.radius * 3;
-            let img;
             if (item.type === "o2")        img = oxygenItemImg;
             if (item.type === "widebar")   img = widebaritemImg;
             if (item.type === "smallball") img = smallballitemImg;
