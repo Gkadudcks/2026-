@@ -515,7 +515,9 @@ window.addEventListener("DOMContentLoaded", () => {
             if (hitPaddle) {
                 ball.dy = -Math.abs(ball.dy);
                 const hitPoint = (ball.x - (paddle.x + paddle.width / 2)) / (paddle.width / 2);
-                ball.dx = hitPoint * 4 + getAveragePaddleMovement() * 0.25;
+                //패들의 최근 10프레임 움직임을 공 움직임에 조금 반영.
+                //보정계수 0.25 -> 15로 줄임
+                ball.dx = hitPoint * 4 + getAveragePaddleMovement() * 0.15;
             }
         });
 
