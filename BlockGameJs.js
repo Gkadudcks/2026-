@@ -25,6 +25,15 @@ window.addEventListener("DOMContentLoaded", () => {
 
 	const oxygenTankImg = new Image();
 	oxygenTankImg.src = "images/oxygen-tank.png";
+
+    const smallballitemImg = new Image();
+    smallballitemImg.src = "images/item_smallball.png";
+
+    const x3itemImg = new Image();
+    x3itemImg.src = "images/item_x3.png";
+
+    const widebaritemImg = new Image();
+    widebaritemImg.src = "images/item_widebar.png";
 	
     // 게임 진행 시 background Image
     const gameBg = new Image();
@@ -53,7 +62,7 @@ window.addEventListener("DOMContentLoaded", () => {
         { container: controlSettingsContainer, controls: controlSettingsContainer.querySelectorAll(".menu-btn"), selectedIndex: 0 }
     ];
 	
-	
+	//난이도 설정
     const difficultySettings = {
         easy: {
         ballSpeed: 6,
@@ -62,20 +71,20 @@ window.addEventListener("DOMContentLoaded", () => {
         brickCol: 6	 // 벽돌 가로 칸 개수
     },
     normal: {
-        ballSpeed: 8,
-        o2Drain: 4,
+        ballSpeed: 9,
+        o2Drain: 3,
         brickRow: 4,
         brickCol: 8
     },
     hard: {
-        ballSpeed: 10,
-        o2Drain: 6,
+        ballSpeed: 100,
+        o2Drain: 4,
         brickRow: 5,
         brickCol: 10
     },
     impossible: {
-        ballSpeed: 13,
-        o2Drain: 8,
+        ballSpeed: 16,
+        o2Drain: 6,
         brickRow: 6,
         brickCol: 12
     }
@@ -96,14 +105,15 @@ window.addEventListener("DOMContentLoaded", () => {
     const PADDLE_HISTORY_FRAME = 10;
     let paddleMoveHistory = Array(PADDLE_HISTORY_FRAME).fill(0);
 
-    const ball = {
+    //x3구현을 위해 객체에서 배열로 변경, 재할당되기 때문에 let으로 변
+    let balls = [{
         // ball의 처음 위치 (가로 : canvas의 중앙 / 세로 : 캔버스 높이 - 90)
         x: WIDTH / 2, 
         y: HEIGHT - 90,
         radius: 8,
         dx: 3,
         dy: -3
-    };
+    }];
 
     // 플레이어가 움직이는 아래 막대
     const paddle = {
@@ -133,10 +143,11 @@ window.addEventListener("DOMContentLoaded", () => {
 
     
     let bricks = [];
-    let o2Items = [];
+    let dropItems = [];
 	
 	// 현재 난이도 저장
-	let currentDifficulty = "easy";
+	let currentDifficulty = difficultySettings.easy;
+	let currentMode = "easy"; // 현재 난이도 문자열 저장-> 아이템 확률계산에 필요
 
     const sfxPlayer = document.getElementById("sfxPlayer");
 
@@ -171,7 +182,7 @@ window.addEventListener("DOMContentLoaded", () => {
 		bricks = [];
 
 		// 현재 난이도에 맞는 설정 가져오기
-		const settings = difficultySettings[currentDifficulty];
+		const settings = currentDifficulty;
 
 		// 현재 난이도의 벽돌 행/열 개수 가져오기
 		const row = settings.brickRow;
@@ -213,18 +224,24 @@ window.addEventListener("DOMContentLoaded", () => {
 					// 벽돌 생존 여부
 					alive: true
 				});
+            }
         }
     }
-}
 
     function resetGame() {
         score = 0;
         o2 = 100;
-        o2Items = [];
-        ball.x = WIDTH / 2;
-        ball.y = HEIGHT - 90;
-        ball.dx = 3;
-        ball.dy = -3;
+        dropItems = [];          // 남아있는 아이템 초기화
+        // balls 배열을 공 1개로 초기화 (x3 효과도 초기화)
+        balls.length = 0;
+        balls.push({
+            x: WIDTH / 2,
+            y: HEIGHT - 90,
+            radius: 8,           // smallball 효과 초기화
+            dx: currentDifficulty.ballSpeed / 2,
+            dy: -currentDifficulty.ballSpeed / 2
+        });
+        paddle.width = 110;      // widebar 효과 초기화
         paddle.x = WIDTH / 2 - paddle.width / 2;
         paddleMoveHistory = Array(PADDLE_HISTORY_FRAME).fill(0);
         gameOverMessage = null;
@@ -346,14 +363,16 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // 공 그리는 함수
     function drawBall() {
-        ctx.beginPath();
-        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-        ctx.fillStyle = "#ff8c3a";
-        ctx.shadowColor = "#ff8c3a";
-        ctx.shadowBlur = 16;
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.closePath();
+        balls.forEach(ball => {
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = "#ff8c3a";
+            ctx.shadowColor = "#ff8c3a";
+            ctx.shadowBlur = 16;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.closePath();
+        });
     }
 
     // 사용자 이동 바 그리는 함수
@@ -386,22 +405,21 @@ window.addEventListener("DOMContentLoaded", () => {
 
 
 	// 산소 아이템(O2 아이템)을 화면에 그리는 함수
-	function drawO2Items() {
+	function drawItems() {
 
 		// o2Items 배열의 모든 아이템 반복
-		o2Items.forEach((item) => {
+		dropItems.forEach((item) => {
 
         // 아이템 크기 설정
-        const size = item.radius * 3;
-
+        const  size = item.radius * 3;
+        let img;
         // 산소통 이미지를 아이템 위치에 그림
-        ctx.drawImage(
-            oxygenTankImg,      // 사용할 산소통 이미지
-            item.x - size / 2, // 이미지 중앙 정렬 x좌표
-            item.y - size / 2, // 이미지 중앙 정렬 y좌표
-            size,              // 이미지 너비
-            size               // 이미지 높이
-			);
+        if (item.type === "o2")       img = oxygenTankImg;
+        if (item.type === "widebar")  img = widebaritemImg;
+        if (item.type === "smallball") img = smallballitemImg;
+        if (item.type === "x3")       img = x3itemImg;
+
+        ctx.drawImage(img, item.x - size / 2, item.y - size / 2, size, size);
 		});
 	}
 
@@ -421,16 +439,42 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 
     //벽돌이 깨졌을 때 확률적으로 O2 아이템 생성
-    function spawnO2Item(x, y) {
-        //35% 확률 난이도 별 상이한 확률을 조정할 필요가 있음
-        if (Math.random() < 0.35) { 
-            o2Items.push({
-                x,
-                y,
-                radius: 15,
-                dy: 1.4
-            });
+    function spawnItem(x, y) {
+        // 35% 확률로 아이템 생성
+        if (Math.random() > 0.35) return;
+
+        // 버프 아이템 목록 (x3 미구현으로 제외)
+        const buffTypes = ["o2", "widebar","x3"];
+
+        // 디버프 아이템 목록
+        const debuffTypes = ["smallball"];
+
+        // 난이도별 디버프 아이템 등장 확률
+        // easy: 디버프 없음 / normal: 20% / hard: 30% / impossible: 40%
+        const debuffChance = {
+            easy: 0,
+            normal: 0.2,
+            hard: 0.3,
+            impossible: 0.4
+        };
+
+        let type;
+        if (Math.random() < debuffChance[currentMode]) {
+            // 디버프 아이템 중 랜덤 선택
+            type = debuffTypes[Math.floor(Math.random() * debuffTypes.length)];
+        } else {
+            // 버프 아이템 중 랜덤 선택
+            type = buffTypes[Math.floor(Math.random() * buffTypes.length)];
         }
+
+        dropItems.push({
+            x,
+            y,
+            radius: 15,
+            dy: 1.4,
+            type,
+            caught: false
+        });
     }
 
     function movePaddle() {
@@ -452,86 +496,78 @@ window.addEventListener("DOMContentLoaded", () => {
 
     //공 움직이기 + 충돌처리
     function moveBall() {
-        ball.x += ball.dx;
-        ball.y += ball.dy;
+        balls.forEach(ball => {
+            ball.x += ball.dx;
+            ball.y += ball.dy;
 
-        // 오른쪽 / 왼쪽 벽에 충돌했을 경우 처리 : 공의 가장자리를 검사 해야 하기 때문에 radius를 사용함
-        if (ball.x + ball.radius > WIDTH || ball.x - ball.radius < 0) ball.dx *= -1;
-        //천장 충돌
-        if (ball.y - ball.radius < 0) ball.dy *= -1;
+            // 오른쪽 / 왼쪽 벽 충돌
+            if (ball.x + ball.radius > WIDTH || ball.x - ball.radius < 0) ball.dx *= -1;
+            // 천장 충돌
+            if (ball.y - ball.radius < 0) ball.dy *= -1;
 
-        // 패들 충돌 여부 : 공이 패들 영역 안에 있는지
-        const hitPaddle =
-            ball.y + ball.radius >= paddle.y && // 공 아래쪽이 패들 위에 닿음
-            ball.y + ball.radius <= paddle.y + paddle.height && // 패들 아래보다 위에 있음
-            //공이 패들 가로 범위 안인지 검사.
-            ball.x >= paddle.x &&
-            ball.x <= paddle.x + paddle.width;
+            // 패들 충돌 여부
+            const hitPaddle =
+                ball.y + ball.radius >= paddle.y &&
+                ball.y + ball.radius <= paddle.y + paddle.height &&
+                ball.x >= paddle.x &&
+                ball.x <= paddle.x + paddle.width;
 
-        if (hitPaddle) {
-            ball.dy = -Math.abs(ball.dy); // 반드시 위를 보장하기 위해 절댓값에 -부호 붙임
-            // 튕기는 각도 계산
-            const hitPoint = (ball.x - (paddle.x + paddle.width / 2)) / (paddle.width / 2);
-            // 패들 움직임 영향이 너무 크지 않도록 보정계수 0.25를 곱해서 적용
-            ball.dx = hitPoint * 4 + getAveragePaddleMovement() * 0.25;
-        }
+            if (hitPaddle) {
+                ball.dy = -Math.abs(ball.dy);
+                const hitPoint = (ball.x - (paddle.x + paddle.width / 2)) / (paddle.width / 2);
+                ball.dx = hitPoint * 4 + getAveragePaddleMovement() * 0.25;
+            }
+        });
 
-        //게임 오버 체크 : 공이 화면아래로 갔을 경우
-        if (ball.y - ball.radius > HEIGHT) {
-            gameOver("MISSION FAILED");
-        }
+        // 모든 공이 바닥에 떨어지면 게임 오버
+        balls = balls.filter(ball => ball.y - ball.radius <= HEIGHT);
+        if (balls.length === 0) gameOver("MISSION FAILED");     //모든 공이 다 떨어지면 게임오
     }
 
     //공(ball)과 벽돌(bricks)의 충돌 처리
-    // 수정 사항 : 충돌 판정을 더 정확하게
     function checkBrickCollision() {
-        bricks.forEach((brick) => {
-            if (!brick.alive) return;
+        balls.forEach(ball => {
+            bricks.forEach((brick) => {
+                if (!brick.alive) return;
 
-            const hit =
-                ball.x + ball.radius > brick.x &&
-                ball.x - ball.radius < brick.x + brick.width &&
-                ball.y + ball.radius > brick.y &&
-                ball.y - ball.radius < brick.y + brick.height;
+                const hit =
+                    ball.x + ball.radius > brick.x &&
+                    ball.x - ball.radius < brick.x + brick.width &&
+                    ball.y + ball.radius > brick.y &&
+                    ball.y - ball.radius < brick.y + brick.height;
 
-            if (hit) {
-                brick.alive = false;
-                // 공 중심과 벽돌 중심 거리 계산
-                const brickCenterX = brick.x + brick.width / 2;
-                const brickCenterY = brick.y + brick.height / 2;
-                const dx = ball.x - brickCenterX;
-                const dy = ball.y - brickCenterY;
+                if (hit) {
+                    brick.alive = false;
+                    const brickCenterX = brick.x + brick.width / 2;
+                    const brickCenterY = brick.y + brick.height / 2;
+                    const dx = ball.x - brickCenterX;
+                    const dy = ball.y - brickCenterY;
 
-                // 위 아래 충돌 우선
-                const overlapX = brick.width / 2 + ball.radius - Math.abs(dx);
-                const overlapY = brick.height / 2 + ball.radius - Math.abs(dy);
+                    const overlapX = brick.width / 2 + ball.radius - Math.abs(dx);
+                    const overlapY = brick.height / 2 + ball.radius - Math.abs(dy);
 
-                // 더 적게 겹친 방향 기준
-                if (overlapX < overlapY) {
-                    // 진짜 옆면 충돌만 좌우 반사
-                    ball.dx *= -1;
-                    // 위치 보정
-                    if (dx > 0) {
-                        ball.x = brick.x + brick.width + ball.radius;
-                    } else{
-                        ball.x = brick.x - ball.radius;
+                    if (overlapX < overlapY) {
+                        ball.dx *= -1;
+                        if (dx > 0) {
+                            ball.x = brick.x + brick.width + ball.radius;
+                        } else {
+                            ball.x = brick.x - ball.radius;
+                        }
+                    } else {
+                        ball.dy *= -1;
+                        if (dy > 0) {
+                            ball.y = brick.y + brick.height + ball.radius;
+                        } else {
+                            ball.y = brick.y - ball.radius;
+                        }
                     }
-                }else{
-                    // 대부분은 상하 반사
-                    ball.dy *= -1;
-                    // 위치 보정
-                    if(dy > 0){
-                        ball.y = brick.y + brick.height + ball.radius;
-                    } else{
-                        ball.y = brick.y - ball.radius;
-                    }
+                    score += 10;
+                    spawnItem(brick.x + brick.width / 2, brick.y + brick.height / 2);
+                    // 효과음 재생
+                    sfxPlayer.currentTime = 0;
+                    sfxPlayer.play();
                 }
-                score += 10;
-                spawnO2Item(brick.x + brick.width / 2, brick.y + brick.height / 2); //o2 아이템 생성
-                //효과음 재생
-                sfxPlayer.currentTime = 0;
-                sfxPlayer.play();
-            }
+            });
         });
 
         if (bricks.every((brick) => !brick.alive)) {
@@ -539,8 +575,8 @@ window.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    function moveO2Items() {
-        o2Items.forEach((item) => {
+    function moveItems() {
+        dropItems.forEach((item) => {
             //아이템 떨어트리기
             item.y += item.dy;
 
@@ -564,12 +600,30 @@ window.addEventListener("DOMContentLoaded", () => {
 
             if (hitPaddle) {
                 item.caught = true;             //먹힌 상태 표시
-                o2 = Math.min(100, o2 + 20);    //o2 회복
+                if(item.type ==="o2"){
+                    o2 = Math.min(100, o2 + 20);    //o2 회복                   
+                }else if(item.type ==="widebar"){
+                    paddle.width = Math.min(paddle.width+50,310);           //paddle 너비 증가(최대 310, 먹을때마다 +50)
+                    
+                }else if(item.type ==="smallball"){
+                    balls.forEach(b=>{b.radius=Math.max(b.radius-2,2);});      //ball 크기 감소(최소 2, 먹을때마다 -2)
+
+                }else if(item.type ==="x3"){
+                    const newBalls=[];
+                    balls.forEach(b =>{
+                        newBalls.push({ x: b.x, y: b.y, radius: b.radius, dx: b.dy * -1, dy: b.dx * -1 });
+                        newBalls.push({ x: b.x, y: b.y, radius: b.radius, dx: b.dx * -1, dy: b.dy });
+
+                    });
+                    balls=[...balls,...newBalls];   // ... : 배열의 요소만 꺼내어 사
+
+                }
+
             }
         });
         //필요없는 o2 아이템 제거하기 ( 화면 밖으로 벗어남 | 이미 획득한 아이템 )
         // filter를 사용해 조건을 만족하는 요소만 남긴 새 배열 반환함 (아직 획득하지 않은 아이템 & 화면 안에 있는 아이템)
-        o2Items = o2Items.filter((item) => !item.caught && item.y < HEIGHT + 30);
+        dropItems = dropItems.filter((item) => !item.caught && item.y < HEIGHT + 30);
     }
 
     //게임 오버 메세지 출력하기
@@ -670,7 +724,7 @@ window.addEventListener("DOMContentLoaded", () => {
         recordPaddleMovement(paddleBeforeX);
         moveBall(); // 공 이동 + 벽 충돌 처리
         checkBrickCollision();  // 벽돌 충돌 검사
-        moveO2Items();  // 산소 아이템 이동 처리
+        moveItems();  // 산소 아이템 이동 처리
         updateUI(); //점수 / O2 UI 업데이트
 
         // 산소 부족할 때 흔들림
@@ -691,7 +745,7 @@ window.addEventListener("DOMContentLoaded", () => {
         ctx.clearRect(0, 0, WIDTH, HEIGHT);
         effectCtx.clearRect(0, 0, WIDTH, HEIGHT);
         drawBricks();
-        drawO2Items();
+        drawItems();
         drawPaddle();
         drawBall();
         drawLowOxygenWarning();
@@ -738,15 +792,13 @@ window.addEventListener("DOMContentLoaded", () => {
     difficultyBtns.forEach((btn) => {
         btn.addEventListener("click", () => {
             document.body.style.backgroundImage = "none"; // body 배경 제거
-            const mode = btn.dataset.mode;
+            const mode = btn.dataset.mode;  // button의 data-mode 값 가져오기
             if (!mode) return;
             // 현재는 EASY만 구현
             console.log("선택 난이도:", mode);
-			currentDifficulty = mode;	//현재 난이도를 기억한다
-            const settings = difficultySettings[mode];
-            ball.dx = settings.ballSpeed / 2;
-            ball.dy = settings.ballSpeed / 2;
-            currentO2Drain = settings.o2Drain;
+			currentDifficulty = difficultySettings[mode];	//현재 난이도를 기억한다
+            currentO2Drain = currentDifficulty.o2Drain;
+            currentMode = mode; // 현재 난이도 문자열 저장
 
             difficultyContainer.style.display = "none";
             menuContainer.style.display = "none";
