@@ -84,28 +84,32 @@ window.addEventListener("DOMContentLoaded", () => {
     // ─────────────────────────────────────────
     const difficultySettings = {
         easy: {
-            ballSpeed: 6,
+            ballSpeed: 13,
             o2Drain: 2,
             brickRow: 3,
-            brickCol: 6
+            brickCol: 6,
+            doubleBrickChance: 0
         },
         normal: {
-            ballSpeed: 9,
+            ballSpeed: 15,
             o2Drain: 3,
             brickRow: 4,
-            brickCol: 8
+            brickCol: 8,
+            doubleBrickChance: 0.2 //20% 확률로 HP 2인 벽돌 등장
         },
         hard: {
-            ballSpeed: 10,
+            ballSpeed: 16,
             o2Drain: 4,
             brickRow: 5,
-            brickCol: 10
+            brickCol: 10,
+            doubleBrickChance: 0.3 //30% 확률로 HP 2인 벽돌 등장
         },
         impossible: {
-            ballSpeed: 16,
+            ballSpeed: 18,
             o2Drain: 6,
             brickRow: 6,
-            brickCol: 12
+            brickCol: 12,
+            doubleBrickChance: 0.35 //35% 확률로 HP 2인 벽돌 등장
         }
     };
 
@@ -181,7 +185,10 @@ window.addEventListener("DOMContentLoaded", () => {
     const ui = document.createElement("div");
     ui.className = "game-ui";
     ui.innerHTML = `
-        <div class="score-box">SCORE <span id="scoreText">0</span></div>
+        <div class="score-box">
+            <img src="images/Astrophage.png" class="score-icon" alt="Astrophage">
+            <span id="scoreText">0</span>
+        </div>
         <div class="o2-panel">
             <img class="o2-label" src="images/oxygen-tank.png" alt="O2">
             <div class="o2-bar-outer">
@@ -215,14 +222,18 @@ window.addEventListener("DOMContentLoaded", () => {
         // 행 수가 많을수록 벽돌 높이 감소 (최소 14px)
         const brickHeight = Math.max(14, 28 - row * 2);
 
+        
         for (let r = 0; r < row; r++) {
             for (let c = 0; c < col; c++) {
+                const hp = Math.random() < settings.doubleBrickChance ? 2 : 1 // 난이도에 따라 HP 1 또는 2
                 bricks.push({
                     x: offsetLeft + c * (brickWidth + padding),
                     y: offsetTop + r * (brickHeight + padding),
                     width: brickWidth,
                     height: brickHeight,
-                    alive: true  // false가 되면 화면에서 제거
+                    alive: true,  // false가 되면 화면에서 제거
+                    hp: hp,  // HP 설정
+                    maxHp: hp // 최대 HP 저장 (HP가 2인 벽돌이 깨질 때 이미지 변경 위해)
                 });
             }
         }
@@ -388,6 +399,15 @@ window.addEventListener("DOMContentLoaded", () => {
         bricks.forEach((brick) => {
             if (!brick.alive) return; // 깨진 벽돌은 건너뜀
             ctx.drawImage(dirtBrickImg, brick.x, brick.y, brick.width, brick.height);
+            ctx.fillStyle = "#3b3b3b";
+            ctx.font = "bold 18px Orbitron";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(
+                brick.hp,
+                brick.x + brick.width / 2,
+                brick.y + brick.height / 2
+            );
         });
     }
 
@@ -530,8 +550,15 @@ window.addEventListener("DOMContentLoaded", () => {
                     ball.y - ball.radius < brick.y + brick.height;
 
                 if (hit) {
-                    brick.alive = false;
-
+                    brick.hp--;
+                    if(brick.hp <= 0) {
+                        brick.alive = false;
+                        score += 10;
+                        spawnItem(brick.x + brick.width / 2, brick.y + brick.height / 2);
+                        // 벽돌 파괴 효과음 재생
+                        sfxPlayer.currentTime = 0;
+                        sfxPlayer.play();
+                    }
                     // 벽돌 중심과 공의 상대 위치
                     const brickCenterX = brick.x + brick.width / 2;
                     const brickCenterY = brick.y + brick.height / 2;
@@ -550,12 +577,7 @@ window.addEventListener("DOMContentLoaded", () => {
                         ball.dy *= -1;
                         ball.y = dy > 0 ? brick.y + brick.height + ball.radius : brick.y - ball.radius;
                     }
-
-                    score += 10;
-                    spawnItem(brick.x + brick.width / 2, brick.y + brick.height / 2);
-                    // 벽돌 파괴 효과음 재생
-                    sfxPlayer.currentTime = 0;
-                    sfxPlayer.play();
+                    return; // 한 프레임에 하나의 벽돌과만 충돌 처리
                 }
             });
         });
