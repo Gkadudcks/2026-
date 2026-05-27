@@ -130,7 +130,7 @@ window.addEventListener("DOMContentLoaded", () => {
     let isPaused = false;           // 일시정지 여부
     let currentO2Drain = difficultySettings.easy.o2Drain;  // 현재 산소 감소 속도
     const PADDLE_HISTORY_FRAME = 10;    // 패들 이동 기록 프레임 수
-    const MIN_BALL_DY = 2;              // 공이 완전히 수평으로 흐르지 않도록 보장
+    const MIN_BALL_DY = 5;              // 공이 완전히 수평으로 흐르지 않도록 보장
     let paddleMoveHistory = Array(PADDLE_HISTORY_FRAME).fill(0); // 최근 10프레임 패들 이동량
 
     // 공 배열 (x3 아이템으로 여러 개가 될 수 있어 배열로 관리)
@@ -171,7 +171,9 @@ window.addEventListener("DOMContentLoaded", () => {
     };
 
     let bricks = [];        // 벽돌 객체 배열
+    let walls = [];         // 깨지지 않는 구조물 배열
     let dropItems = [];     // 현재 떨어지고 있는 아이템 배열
+    let currentMap = null;  // 현재 라운드에 선택된 맵 템플릿
 
     // 현재 난이도 저장 (난이도 선택 시 갱신)
     let currentDifficulty = difficultySettings.easy;
@@ -207,11 +209,12 @@ window.addEventListener("DOMContentLoaded", () => {
     // 벽돌 생성
     // 현재 난이도의 행/열 수에 맞게 벽돌 크기와 위치를 자동 계산
     // ─────────────────────────────────────────
-    function createBricks() {
-        bricks = [];
+    function getBrickGridMetrics() {
         const settings = currentDifficulty;
-        const row = settings.brickRow;
-        const col = settings.brickCol;
+        // 맵 템플릿이 row/col을 직접 지정하면 그 값을 우선 사용하고,
+        // 없으면 기존 난이도 설정의 행/열 수를 그대로 사용한다.
+        const row = currentMap && currentMap.row ? currentMap.row : settings.brickRow;
+        const col = currentMap && currentMap.col ? currentMap.col : settings.brickCol;
         const padding = 8;
         const offsetLeft = 35;
         const offsetTop = 70;
@@ -222,21 +225,144 @@ window.addEventListener("DOMContentLoaded", () => {
         // 행 수가 많을수록 벽돌 높이 감소 (최소 14px)
         const brickHeight = Math.max(14, 28 - row * 2);
 
-        
-        for (let r = 0; r < row; r++) {
-            for (let c = 0; c < col; c++) {
-                const hp = Math.random() < settings.doubleBrickChance ? 2 : 1 // 난이도에 따라 HP 1 또는 2
-                bricks.push({
-                    x: offsetLeft + c * (brickWidth + padding),
-                    y: offsetTop + r * (brickHeight + padding),
-                    width: brickWidth,
-                    height: brickHeight,
-                    alive: true,  // false가 되면 화면에서 제거
-                    hp: hp,  // HP 설정
-                    maxHp: hp // 최대 HP 저장 (HP가 2인 벽돌이 깨질 때 이미지 변경 위해)
-                });
+        return { row, col, padding, offsetLeft, offsetTop, brickWidth, brickHeight };
+    }
+
+    // 맵 파일은 격자(row/col)만 알고 있으므로, 실제 충돌/렌더링에 쓰는 캔버스 좌표로 변환한다.
+    // rows/cols가 2 이상이면 여러 브릭 칸을 합친 하나의 큰 구조물 사각형이 된다.
+    function getGridRect(cell, metrics) {
+        const rowSpan = cell.rows || 1;
+        const colSpan = cell.cols || 1;
+
+        return {
+            x: metrics.offsetLeft + cell.col * (metrics.brickWidth + metrics.padding),
+            y: metrics.offsetTop + cell.row * (metrics.brickHeight + metrics.padding),
+            width: metrics.brickWidth * colSpan + metrics.padding * (colSpan - 1),
+            height: metrics.brickHeight * rowSpan + metrics.padding * (rowSpan - 1)
+        };
+    }
+
+    // 일반 브릭 한 칸을 생성한다. HP는 기존 난이도별 doubleBrickChance 규칙을 그대로 따른다.
+    function addBrick(row, col, metrics) {
+        const hp = Math.random() < currentDifficulty.doubleBrickChance ? 2 : 1; // 난이도에 따라 HP 1 또는 2
+        const rect = getGridRect({ row, col }, metrics);
+        bricks.push({
+            x: rect.x,
+            y: rect.y,
+            width: rect.width,
+            height: rect.height,
+            alive: true,  // false가 되면 화면에서 제거
+            hp: hp,  // HP 설정
+            maxHp: hp // 최대 HP 저장 (HP가 2인 벽돌이 깨질 때 이미지 변경 위해)
+        });
+    }
+
+    // brickGroups 배열의 group 하나를 실제 브릭 후보 칸들로 풀어 Set에 넣는다.
+    // 예: { row: 0, col: 0, rows: 2, cols: 3 }이면 2x3칸이 브릭 후보가 된다.
+    function addBrickCellsFromGroup(group, cellSet) {
+        for (let r = group.row; r < group.row + group.rows; r++) {
+            for (let c = group.col; c < group.col + group.cols; c++) {
+                cellSet.add(`${r},${c}`);
             }
         }
+    }
+
+    // 구조물이 놓인 칸은 일반 브릭이 있으면 안 되므로, 브릭 후보 셀에서 먼저 제거한다.
+    // 이렇게 해야 사진처럼 "원래 브릭 자리"를 구조물이 대체하는 맵이 된다.
+    function removeObstacleCells(obstacles, cellSet) {
+        obstacles.forEach((obstacle) => {
+            const rows = obstacle.rows || 1;
+            const cols = obstacle.cols || 1;
+            for (let r = obstacle.row; r < obstacle.row + rows; r++) {
+                for (let c = obstacle.col; c < obstacle.col + cols; c++) {
+                    cellSet.delete(`${r},${c}`);
+                }
+            }
+        });
+    }
+
+    // 현재 난이도의 행/열 수 또는 맵 템플릿에 맞춰 벽돌 생성
+    function createBricks() {
+        bricks = [];
+        const metrics = getBrickGridMetrics();
+
+        if (currentMap && currentMap.brickGroups) {
+            // 1) 맵 템플릿의 brickGroups로 브릭 후보 칸을 모은다.
+            // 2) obstacles가 차지하는 칸을 제거한다.
+            // 3) 남은 칸만 실제 브릭 객체로 변환한다.
+            const brickCells = new Set();
+            currentMap.brickGroups.forEach((group) => addBrickCellsFromGroup(group, brickCells));
+            removeObstacleCells(currentMap.obstacles || [], brickCells);
+
+            brickCells.forEach((key) => {
+                const [row, col] = key.split(",").map(Number);
+                addBrick(row, col, metrics);
+            });
+            return;
+        }
+
+        // easy처럼 별도 맵 템플릿이 없는 난이도는 기존 전체 격자 브릭 생성 방식을 유지한다.
+        for (let r = 0; r < metrics.row; r++) {
+            for (let c = 0; c < metrics.col; c++) {
+                addBrick(r, c, metrics);
+            }
+        }
+    }
+
+    // 현재 난이도에 맞는 구조물 맵 중 하나를 랜덤 선택
+    function selectCurrentMap() {
+        const mapList = window.BLOCK_GAME_MAPS && window.BLOCK_GAME_MAPS[currentMode];
+        if (!mapList || mapList.length === 0) {
+            currentMap = null;
+            return;
+        }
+
+        currentMap = mapList[Math.floor(Math.random() * mapList.length)];
+    }
+
+    // 선택된 맵의 obstacle 정의를 실제 캔버스 좌표의 wall 객체로 변환한다.
+    // obstacle이 예약한 격자 칸은 브릭 생성에서 빠지고, lineWall은 그 빈 자리 중앙에 얇은 충돌 벽으로 생성된다.
+    // 즉 lineWall의 빈 여백은 실제로도 충돌하지 않고, 보이는 선 두께만 충돌 영역으로 사용한다.
+    function createWalls() {
+        walls = [];
+        if (!currentMap || !currentMap.obstacles) return;
+
+        const metrics = getBrickGridMetrics();
+        walls = currentMap.obstacles.map((obstacle) => {
+            const rect = getGridRect(obstacle, metrics);
+            const type = obstacle.type || "solidBrick";
+
+            if (type === "lineWall") {
+                const thickness = 14;
+                if (obstacle.direction === "vertical") {
+                    const width = Math.min(thickness, rect.width);
+                    return {
+                        ...obstacle,
+                        x: rect.x + (rect.width - width) / 2,
+                        y: rect.y,
+                        width,
+                        height: rect.height
+                    };
+                }
+
+                const height = Math.min(thickness, rect.height);
+                return {
+                    ...obstacle,
+                    x: rect.x,
+                    y: rect.y + (rect.height - height) / 2,
+                    width: rect.width,
+                    height
+                };
+            }
+
+            return {
+                ...obstacle,
+                x: rect.x,
+                y: rect.y,
+                width: rect.width,
+                height: rect.height
+            };
+        });
     }
 
     // ─────────────────────────────────────────
@@ -262,7 +388,9 @@ window.addEventListener("DOMContentLoaded", () => {
         gameOverMessage = null;
         isPaused = false;
         hideResultButtons();
+        selectCurrentMap();
         createBricks();
+        createWalls();
         updateUI();
     }
 
@@ -411,6 +539,130 @@ window.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // 깨지지 않는 구조물 그리기
+    function drawWalls() {
+        walls.forEach((wall) => {
+            if (wall.type === "solidBrick") {
+                ctx.drawImage(metalBrickImg, wall.x, wall.y, wall.width, wall.height);
+                return;
+            }
+
+            if (wall.type === "diamondWall") {
+                drawDiamondWall(wall);
+                return;
+            }
+
+            if (wall.type === "triangleWall") {
+                drawTriangleWall(wall);
+                return;
+            }
+
+            drawLineWall(wall);
+        });
+    }
+
+    function drawLineWall(wall) {
+        ctx.fillStyle = "#05070d";
+        ctx.fillRect(wall.x, wall.y, wall.width, wall.height);
+        ctx.strokeStyle = "#5f6f8a";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(wall.x, wall.y, wall.width, wall.height);
+        ctx.lineWidth = 1;
+    }
+
+    function drawDiamondWall(wall) {
+        const centerX = wall.x + wall.width / 2;
+        const centerY = wall.y + wall.height / 2;
+        ctx.beginPath();
+        ctx.moveTo(centerX, wall.y + 3);
+        ctx.lineTo(wall.x + wall.width - 3, centerY);
+        ctx.lineTo(centerX, wall.y + wall.height - 3);
+        ctx.lineTo(wall.x + 3, centerY);
+        ctx.closePath();
+        ctx.fillStyle = "#7d8791";
+        ctx.fill();
+        ctx.strokeStyle = "#111820";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.lineWidth = 1;
+    }
+
+    function drawTriangleWall(wall) {
+        const points = getTrianglePoints(wall);
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        ctx.lineTo(points[1].x, points[1].y);
+        ctx.lineTo(points[2].x, points[2].y);
+        ctx.closePath();
+        ctx.fillStyle = "#05070d";
+        ctx.fill();
+        ctx.strokeStyle = "#5f6f8a";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.clip();
+
+        ctx.strokeStyle = "#5f6f8a";
+        ctx.lineWidth = 2;
+        for (let i = -wall.height; i < wall.width + wall.height; i += 8) {
+            ctx.beginPath();
+            ctx.moveTo(wall.x + i, wall.y + wall.height);
+            ctx.lineTo(wall.x + i + wall.height, wall.y);
+            ctx.stroke();
+        }
+        ctx.restore();
+        ctx.lineWidth = 1;
+    }
+
+    function getTrianglePoints(wall) {
+        const left = wall.x + 3;
+        const right = wall.x + wall.width - 3;
+        const top = wall.y + 3;
+        const bottom = wall.y + wall.height - 3;
+
+        if (wall.direction === "downLeft") {
+            return [
+                { x: right, y: top },
+                { x: right, y: bottom },
+                { x: left, y: bottom }
+            ];
+        }
+
+        if (wall.direction === "upRight") {
+            return [
+                { x: left, y: top },
+                { x: right, y: top },
+                { x: left, y: bottom }
+            ];
+        }
+
+        if (wall.direction === "upLeft") {
+            return [
+                { x: left, y: top },
+                { x: left, y: bottom },
+                { x: right, y: top }
+            ];
+        }
+
+        return [
+            { x: left, y: top },
+            { x: right, y: top },
+            { x: right, y: bottom }
+        ];
+    }
+
+    function getDiamondPoints(wall) {
+        const centerX = wall.x + wall.width / 2;
+        const centerY = wall.y + wall.height / 2;
+
+        return [
+            { x: centerX, y: wall.y + 3 },
+            { x: wall.x + wall.width - 3, y: centerY },
+            { x: centerX, y: wall.y + wall.height - 3 },
+            { x: wall.x + 3, y: centerY }
+        ];
+    }
+
     // 현재 떨어지는 아이템들을 타입에 맞는 이미지로 그리기
     function drawItems() {
         dropItems.forEach((item) => {
@@ -535,19 +787,208 @@ window.addEventListener("DOMContentLoaded", () => {
         if (balls.length === 0) gameOver("MISSION FAILED");
     }
 
+    // 원형 공과 축에 평행한 사각형(AABB)이 겹치는지 빠르게 검사한다.
+    // 일반 브릭, solidBrick, lineWall처럼 직사각형인 대상에 사용한다.
+    function isBallHitRect(ball, rect) {
+        return (
+            ball.x + ball.radius > rect.x &&
+            ball.x - ball.radius < rect.x + rect.width &&
+            ball.y + ball.radius > rect.y &&
+            ball.y - ball.radius < rect.y + rect.height
+        );
+    }
+
+    // 깨지지 않는 대각선 구조물만 실제 다각형 꼭짓점으로 변환한다.
+    // solidBrick/lineWall은 사각형 충돌을 쓰므로 null을 반환한다.
+    function getWallPolygon(wall) {
+        if (wall.type === "diamondWall") return getDiamondPoints(wall);
+        if (wall.type === "triangleWall") return getTrianglePoints(wall);
+        return null;
+    }
+
+    // 다각형의 중심점이다. 공이 도형 안쪽에 들어간 예외 상황에서 바깥 방향 법선을 잡는 데 쓴다.
+    function getPolygonCenter(points) {
+        const sum = points.reduce((acc, point) => ({
+            x: acc.x + point.x,
+            y: acc.y + point.y
+        }), { x: 0, y: 0 });
+
+        return {
+            x: sum.x / points.length,
+            y: sum.y / points.length
+        };
+    }
+
+    // 한 변(start-end) 위에서 point와 가장 가까운 점을 구한다.
+    // 공 중심과 각 변 사이의 최단거리를 계산하기 위한 기본 함수다.
+    function getClosestPointOnSegment(point, start, end) {
+        const segmentX = end.x - start.x;
+        const segmentY = end.y - start.y;
+        const lengthSquared = segmentX * segmentX + segmentY * segmentY;
+
+        // t는 선분 위에서 closest point가 어디쯤인지 나타내는 0~1 비율이다.
+        // 0이면 start, 1이면 end, 0.5면 선분의 정중앙에 가장 가깝다는 뜻이다.
+        if (lengthSquared === 0) return { x: start.x, y: start.y, t: 0 };
+
+        const t = Math.max(0, Math.min(1, (
+            (point.x - start.x) * segmentX + (point.y - start.y) * segmentY
+        ) / lengthSquared));
+
+        return {
+            x: start.x + segmentX * t,
+            y: start.y + segmentY * t,
+            t
+        };
+    }
+
+    // point가 다각형 내부에 있는지 판단한다.
+    // 공 중심이 이미 구조물 안으로 살짝 들어간 프레임에서도 바깥으로 밀어낼 방향을 계산하기 위해 사용한다.
+    function isPointInPolygon(point, polygon) {
+        let inside = false;
+
+        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+            const current = polygon[i];
+            const previous = polygon[j];
+            const intersects = (
+                (current.y > point.y) !== (previous.y > point.y) &&
+                point.x < (previous.x - current.x) * (point.y - current.y) / (previous.y - current.y) + current.x
+            );
+
+            if (intersects) inside = !inside;
+        }
+
+        return inside;
+    }
+
+    // 공과 삼각형/마름모 구조물의 실제 변 사이 최단거리를 구해 충돌 여부를 판단한다.
+    // closest.distance가 공 반지름보다 작으면 공 둘레가 해당 변에 닿은 것이므로 충돌이다.
+    // 반환하는 normal은 공을 어느 방향으로 튕기고 밀어내야 하는지를 나타내는 단위 벡터다.
+    function getCirclePolygonCollision(ball, polygon) {
+        const ballCenter = { x: ball.x, y: ball.y };
+        const polygonCenter = getPolygonCenter(polygon);
+        const isInside = isPointInPolygon(ballCenter, polygon);
+        let closest = null;
+
+        for (let i = 0; i < polygon.length; i++) {
+            const start = polygon[i];
+            const end = polygon[(i + 1) % polygon.length];
+            const point = getClosestPointOnSegment(ballCenter, start, end);
+            const dx = ballCenter.x - point.x;
+            const dy = ballCenter.y - point.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (!closest || distance < closest.distance) {
+                closest = { start, end, point, distance };
+            }
+        }
+
+        if (!closest || (!isInside && closest.distance > ball.radius)) return null;
+
+        let normalX;
+        let normalY;
+
+        // t가 0 또는 1에 너무 가까우면 변의 중간이 아니라 꼭짓점에 맞은 상황에 가깝다.
+        // 0.05~0.95 안쪽만 "변에 맞음"으로 보고, 양 끝 5%는 꼭짓점 충돌처럼 처리한다.
+        if (closest.point.t > 0.05 && closest.point.t < 0.95) {
+            const edgeX = closest.end.x - closest.start.x;
+            const edgeY = closest.end.y - closest.start.y;
+            const midX = (closest.start.x + closest.end.x) / 2;
+            const midY = (closest.start.y + closest.end.y) / 2;
+
+            // 변의 법선을 사용해야 평평한 변은 일반 벽처럼 수직/수평으로 반사된다.
+            normalX = -edgeY;
+            normalY = edgeX;
+            if (normalX * (midX - polygonCenter.x) + normalY * (midY - polygonCenter.y) < 0) {
+                normalX *= -1;
+                normalY *= -1;
+            }
+        } else {
+            // 꼭짓점에 맞은 경우에는 특정 변의 법선보다 공-꼭짓점 방향이 자연스럽다.
+            normalX = ballCenter.x - closest.point.x;
+            normalY = ballCenter.y - closest.point.y;
+        }
+
+        let normalLength = Math.sqrt(normalX * normalX + normalY * normalY);
+        if (normalLength === 0) {
+            normalX = ballCenter.x - polygonCenter.x;
+            normalY = ballCenter.y - polygonCenter.y;
+            normalLength = Math.sqrt(normalX * normalX + normalY * normalY) || 1;
+        }
+
+        return {
+            normalX: normalX / normalLength,
+            normalY: normalY / normalLength,
+            penetration: isInside ? ball.radius + closest.distance : ball.radius - closest.distance
+        };
+    }
+
+    // 겹침량(overlap)은 공이 사각형 안으로 얼마나 파고들었는지를 x축/y축별로 계산한 값이다.
+    // 더 작은 축이 실제로 들어온 방향에 가깝기 때문에 그 축의 속도만 반전하고 공 위치를 사각형 밖으로 보정한다.
+    function bounceBallFromRect(ball, rect) {
+        const rectCenterX = rect.x + rect.width / 2;
+        const rectCenterY = rect.y + rect.height / 2;
+        const dx = ball.x - rectCenterX;
+        const dy = ball.y - rectCenterY;
+
+        const overlapX = rect.width / 2 + ball.radius - Math.abs(dx);
+        const overlapY = rect.height / 2 + ball.radius - Math.abs(dy);
+
+        if (overlapX < overlapY) {
+            ball.dx *= -1;
+            ball.x = dx > 0 ? rect.x + rect.width + ball.radius : rect.x - ball.radius;
+        } else {
+            ball.dy *= -1;
+            ball.y = dy > 0 ? rect.y + rect.height + ball.radius : rect.y - ball.radius;
+        }
+    }
+
+    // 다각형 충돌 반사 공식: v' = v - 2(v·n)n
+    // v는 공 속도, n은 충돌한 변의 바깥 방향 법선이다. 속도의 법선 성분만 반대로 뒤집는다.
+    function bounceBallFromPolygon(ball, collision) {
+        const dot = ball.dx * collision.normalX + ball.dy * collision.normalY;
+        ball.dx -= 2 * dot * collision.normalX;
+        ball.dy -= 2 * dot * collision.normalY;
+
+        // penetration만큼 밀면 이론상 경계에 딱 붙지만, 부동소수점 오차로 다음 프레임에 또 맞을 수 있다.
+        // 0.5px은 구조물 밖으로 확실히 빼내기 위한 작은 여유값이다.
+        const push = Math.max(collision.penetration, 0) + 0.5;
+        ball.x += collision.normalX * push;
+        ball.y += collision.normalY * push;
+    }
+
+    // 구조물 타입에 맞는 충돌 정보를 반환한다.
+    // triangleWall/diamondWall은 다각형 충돌, 나머지 벽은 사각형 충돌을 사용한다.
+    function getWallCollision(ball, wall) {
+        const polygon = getWallPolygon(wall);
+        if (polygon) return getCirclePolygonCollision(ball, polygon);
+        return isBallHitRect(ball, wall) ? { rect: true } : null;
+    }
+
+    // 공과 깨지지 않는 구조물 충돌 처리
+    function checkWallCollision() {
+        balls.forEach((ball) => {
+            for (const wall of walls) {
+                const collision = getWallCollision(ball, wall);
+                if (!collision) continue;
+
+                if (collision.rect) {
+                    bounceBallFromRect(ball, wall);
+                } else {
+                    bounceBallFromPolygon(ball, collision);
+                }
+                return;
+            }
+        });
+    }
+
     // 공과 벽돌 충돌 처리
-    // 겹침량(overlap)을 계산해 x/y 중 더 작은 쪽 방향으로 공을 튕김
     function checkBrickCollision() {
         balls.forEach(ball => {
             bricks.forEach((brick) => {
                 if (!brick.alive) return;
 
-                // AABB 충돌 판정 (Axis-Aligned Bounding Box)
-                const hit =
-                    ball.x + ball.radius > brick.x &&
-                    ball.x - ball.radius < brick.x + brick.width &&
-                    ball.y + ball.radius > brick.y &&
-                    ball.y - ball.radius < brick.y + brick.height;
+                // 깨지는 브릭은 현재 사각형만 사용한다. 대각선 충돌은 깨지지 않는 구조물에서만 처리한다.
+                const hit = isBallHitRect(ball, brick);
 
                 if (hit) {
                     brick.hp--;
@@ -559,24 +1000,8 @@ window.addEventListener("DOMContentLoaded", () => {
                         sfxPlayer.currentTime = 0;
                         sfxPlayer.play();
                     }
-                    // 벽돌 중심과 공의 상대 위치
-                    const brickCenterX = brick.x + brick.width / 2;
-                    const brickCenterY = brick.y + brick.height / 2;
-                    const dx = ball.x - brickCenterX;
-                    const dy = ball.y - brickCenterY;
 
-                    // 겹친 양 계산
-                    const overlapX = brick.width / 2 + ball.radius - Math.abs(dx);
-                    const overlapY = brick.height / 2 + ball.radius - Math.abs(dy);
-
-                    // 겹침이 적은 축 방향으로 튕김 처리
-                    if (overlapX < overlapY) {
-                        ball.dx *= -1;
-                        ball.x = dx > 0 ? brick.x + brick.width + ball.radius : brick.x - ball.radius;
-                    } else {
-                        ball.dy *= -1;
-                        ball.y = dy > 0 ? brick.y + brick.height + ball.radius : brick.y - ball.radius;
-                    }
+                    bounceBallFromRect(ball, brick);
                     return; // 한 프레임에 하나의 벽돌과만 충돌 처리
                 }
             });
@@ -720,6 +1145,7 @@ window.addEventListener("DOMContentLoaded", () => {
         recordPaddleMovement(lastPaddleX);
         lastPaddleX = paddle.x;
         moveBall();
+        checkWallCollision();
         checkBrickCollision();
         moveItems();
         updateUI();
@@ -739,6 +1165,7 @@ window.addEventListener("DOMContentLoaded", () => {
         ctx.clearRect(0, 0, WIDTH, HEIGHT);
         effectCtx.clearRect(0, 0, WIDTH, HEIGHT);
         drawBricks();
+        drawWalls();
         drawItems();
         drawPaddle();
         drawBall();
