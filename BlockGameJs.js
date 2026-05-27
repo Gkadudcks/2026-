@@ -696,9 +696,28 @@ window.addEventListener("DOMContentLoaded", () => {
     // 난이도에 따라 디버프 아이템 등장 확률이 달라짐
     // ─────────────────────────────────────────
     function spawnItem(x, y) {
+        const o2Dropchance={
+            easy: 0.3,
+            normal: 0.25,
+            hard: 0.20,
+            impossible: 0.15
+        }
+
+        if(Math.random()<o2Dropchance[currentMode]){
+            dropItems.push({
+            x,
+            y,
+            radius: 15,
+            dy: 1.4,   
+            type:"o2",
+            caught: false   
+            });
+            return ;
+        };
+
         if (Math.random() > 0.35) return; // 65% 확률로 아이템 없음
 
-        const buffTypes = ["o2", "widebar", "x3"];      // 버프 아이템 목록
+        const buffTypes = [ "widebar", "x3"];      // 버프 아이템 목록
         const debuffTypes = ["smallball"];               // 디버프 아이템 목록
 
         // 난이도별 디버프 등장 확률 (easy는 디버프 없음)
