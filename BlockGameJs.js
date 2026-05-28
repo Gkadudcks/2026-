@@ -178,6 +178,7 @@ window.addEventListener("DOMContentLoaded", () => {
     // 현재 난이도 저장 (난이도 선택 시 갱신)
     let currentDifficulty = difficultySettings.easy;
     let currentMode = "easy"; // 아이템 디버프 확률 계산에 사용되는 난이도 문자열
+    let currentAvailableItems = null; // 스토리모드 스테이지별 아이템 목록 (null이면 기본 목록 사용)
 
     const sfxPlayer = document.getElementById("sfxPlayer"); // 효과음 오디오 엘리먼트
 
@@ -746,8 +747,13 @@ window.addEventListener("DOMContentLoaded", () => {
 
         if (Math.random() > 0.35) return; // 65% 확률로 아이템 없음
 
-        const buffTypes = [ "widebar", "x3"];      // 버프 아이템 목록
-        const debuffTypes = ["smallball"];               // 디버프 아이템 목록
+        // 스토리모드면 해당 스테이지 아이템 목록 사용, 아니면 기본 목록
+        const buffTypes = currentAvailableItems
+            ? currentAvailableItems.filter(i => i !== "o2" && i !== "smallball")
+            : ["widebar", "x3"];
+        const debuffTypes = currentAvailableItems
+            ? currentAvailableItems.filter(i => i === "smallball")
+            : ["smallball"];
 
         // 난이도별 디버프 등장 확률 (easy는 디버프 없음)
         const debuffChance = {
@@ -1120,7 +1126,12 @@ window.addEventListener("DOMContentLoaded", () => {
     function gameOver(message) {
         if (!isPlaying) return; // 중복 실행 방지
         isPlaying = false;
-        gameOverMessage = message;
+        // 스토리 모드 클리어 시 스테이지별 메시지로 교체
+        if (window.storyMode && window.storyMode.active && message === "STAGE CLEAR") {
+            gameOverMessage = window.STORY_STAGES[window.storyMode.currentStage].clearMessage;
+        } else {
+            gameOverMessage = message;
+        }
         canvasStack.style.transform = "translate(0,0)";
         showResultButtons(message === "STAGE CLEAR");
     }
@@ -1263,6 +1274,11 @@ window.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    // 스토리 모드 버튼 클릭
+    document.getElementById("storyModeBtn").addEventListener("click", () => {
+        startStoryMode();
+    });
+
     // 난이도 선택 → 뒤로가기: 메인 메뉴로 복귀
     difficultyBackBtn.addEventListener("click", () => {
         difficultyContainer.style.display = "none";
@@ -1309,29 +1325,30 @@ window.addEventListener("DOMContentLoaded", () => {
         startRound();
     });
 
-    // 다음 스테이지 버튼 (현재는 같은 스테이지 재시작)
+    // 다음 스테이지 버튼
     nextStageBtn.addEventListener("click", () => {
-        const modes = Object.keys(difficultySettings);
-        let currentIndex = modes.indexOf(currentMode);
+        if (window.storyMode && window.storyMode.active) {
+            // 스토리모드: 다음 스테이지 컷씬으로
+            nextStoryStage();
+        } else {
+            // 일반모드: 다음 난이도로 자동 진행
+            const modes = Object.keys(difficultySettings);
+            const currentIndex = modes.indexOf(currentMode);
 
-        // 마지막 난이도(impossible) 클리어
-        if (currentIndex >= modes.length - 1) {
-
-            gameContainer.style.display = "none";
-            difficultyContainer.style.display = "flex";
-
-            document.body.style.backgroundImage = window.currentMenuBackground || 'url("images/space-background1.png")';
-
-            hideResultButtons();
-            return;
+            if (currentIndex >= modes.length - 1) {
+                // impossible 클리어 → 난이도 선택화면으로
+                gameContainer.style.display = "none";
+                difficultyContainer.style.display = "flex";
+                document.body.style.backgroundImage = window.currentMenuBackground || 'url("images/space-background1.png")';
+                hideResultButtons();
+                return;
+            }
+            // 다음 난이도로 변경 후 시작
+            currentMode = modes[currentIndex + 1];
+            currentDifficulty = difficultySettings[currentMode];
+            currentO2Drain = currentDifficulty.o2Drain;
+            startRound();
         }
-
-        // 다음 난이도로 변경
-        currentMode = modes[currentIndex + 1];
-        currentDifficulty = difficultySettings[currentMode];
-        currentO2Drain = currentDifficulty.o2Drain;
-
-        startRound();
     });
 
     // 키보드 입력 처리
@@ -1386,4 +1403,36 @@ window.addEventListener("DOMContentLoaded", () => {
     });
 
     focusMenuButton(); // 초기 포커스 설정
+
+    // ─────────────────────────────────────────
+    // window.gameAPI
+    //
+    // StoryModeJs.js는 별도 파일이라 BlockGameJs.js 안의
+    // 변수(currentDifficulty 등)와 함수(startRound)에 직접 접근할 수 없음.
+    //
+    // 그래서 외부에서 사용할 기능만 window.gameAPI 객체에 담아서 공개함.
+    // → StoryModeJs.js에서 window.gameAPI.xxx() 형태로 호출 가능.
+    // ─────────────────────────────────────────
+    window.gameAPI = {
+
+        // 난이도 설정 함수
+        // StoryModeJs.js의 startStoryStage()에서 스테이지별 난이도를 적용할 때 호출
+        // mode: "easy" / "normal" / "hard" / "impossible" 중 하나
+        setDifficulty: (mode) => {
+            currentDifficulty = difficultySettings[mode]; // 난이도별 설정값 적용
+            currentO2Drain = currentDifficulty.o2Drain;   // 산소 감소 속도 적용
+            currentMode = mode;                           // 현재 난이도 문자열 저장
+        },
+
+        // 스테이지별 아이템 목록 설정 함수
+        // StoryModeJs.js의 startStoryStage()에서 스테이지별 드롭 아이템을 지정할 때 호출
+        // items: STORY_STAGES의 availableItems 배열 (예: ["o2","widebar","x3"])
+        setAvailableItems: (items) => {
+            currentAvailableItems = items;
+        },
+
+        // 게임 시작 함수
+        // StoryModeJs.js의 startStoryStage()에서 컷씬이 끝난 후 게임을 시작할 때 호출
+        startRound: () => startRound()
+    };
 });

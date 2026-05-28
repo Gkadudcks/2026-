@@ -4,6 +4,7 @@
 	<link href="https://fonts.googleapis.com/css2?family=Gamja+Flower&family=Michroma&family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 	<script src = "BlockGameMaps.js"></script>
+	<script src="StoryModeJs.js"></script>
 	<script src = "BlockGameJs.js"></script>
 	<script src = "SettingsJs.js"></script>	<!--환경 설정 관련 js파일-->
 	<link rel="stylesheet"  href="BlockGameStyle.css">
@@ -40,6 +41,7 @@
 		<button class = "difficulty-btn" data-mode="normal">NORMAL</button>
 		<button class = "difficulty-btn" data-mode="hard">HARD</button>
 		<button class = "difficulty-btn" data-mode="impossible">IMPOSSIBLE</button>
+		<button class="difficulty-btn" id="storyModeBtn">STORYMOD</button>
 		<button id="difficultyBackBtn" class="difficulty-btn">← BACK</button>
 	</div>
 
@@ -50,6 +52,12 @@
 			<canvas id="gameCanvas" width="800" height="600"></canvas>
 			<canvas id="effectCanvas" width="800" height="600"></canvas>
 		</div>
+		<!-- 스토리모드 컷씬 오버레이 -->
+		<div id="cutsceneContainer">
+			<div id="cutsceneText"></div>
+			<button id="cutsceneSkipBtn">SKIP</button>
+		</div>
+
 		<div class="game-result-buttons" id="gameResultButtons">
 			<button id="resumeBtn">RESUME GAME</button>
 			<button id="retryBtn">RETRY</button>
