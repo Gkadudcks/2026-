@@ -33,6 +33,9 @@ window.addEventListener("DOMContentLoaded", () => {
     const metalBrickImg = new Image();
     metalBrickImg.src = "images/metal-brick.png";
 
+    const metalBrokenBrickImg = new Image();
+    metalBrokenBrickImg.src = "images/metal-brick-broken.png";
+
     const oxygenTankImg = new Image();
     oxygenTankImg.src = "images/oxygen-tank.png";
 
@@ -556,16 +559,22 @@ window.addEventListener("DOMContentLoaded", () => {
     function drawBricks() {
         bricks.forEach((brick) => {
             if (!brick.alive) return; // 깨진 벽돌은 건너뜀
-            ctx.drawImage(dirtBrickImg, brick.x, brick.y, brick.width, brick.height);
-            ctx.fillStyle = "#3b3b3b";
-            ctx.font = "bold 18px Orbitron";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(
-                brick.hp,
-                brick.x + brick.width / 2,
-                brick.y + brick.height / 2
-            );
+
+            let brickImg = dirtBrickImg;
+            if (brick.maxHp > 1) {
+                brickImg = brick.hp === brick.maxHp ? metalBrickImg : metalBrokenBrickImg;
+            }
+
+            ctx.drawImage(brickImg, brick.x, brick.y, brick.width, brick.height);
+            // ctx.fillStyle = "#3b3b3b";
+            // ctx.font = "bold 18px Orbitron";
+            // ctx.textAlign = "center";
+            // ctx.textBaseline = "middle";
+            // ctx.fillText(
+            //     brick.hp,
+            //     brick.x + brick.width / 2,
+            //     brick.y + brick.height / 2
+            // );
         });
     }
 
@@ -591,10 +600,16 @@ window.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // 구조물 색상은 thin wall 기준으로 통일한다.
+    const wallStyle = {
+        fill: "#05070d",
+        stroke: "#5f6f8a"
+    };
+
     function drawLineWall(wall) {
-        ctx.fillStyle = "#05070d";
+        ctx.fillStyle = wallStyle.fill;
         ctx.fillRect(wall.x, wall.y, wall.width, wall.height);
-        ctx.strokeStyle = "#5f6f8a";
+        ctx.strokeStyle = wallStyle.stroke;
         ctx.lineWidth = 2;
         ctx.strokeRect(wall.x, wall.y, wall.width, wall.height);
         ctx.lineWidth = 1;
@@ -609,9 +624,9 @@ window.addEventListener("DOMContentLoaded", () => {
         ctx.lineTo(centerX, wall.y + wall.height - 3);
         ctx.lineTo(wall.x + 3, centerY);
         ctx.closePath();
-        ctx.fillStyle = "#7d8791";
+        ctx.fillStyle = wallStyle.fill;
         ctx.fill();
-        ctx.strokeStyle = "#111820";
+        ctx.strokeStyle = wallStyle.stroke;
         ctx.lineWidth = 2;
         ctx.stroke();
         ctx.lineWidth = 1;
@@ -619,28 +634,16 @@ window.addEventListener("DOMContentLoaded", () => {
 
     function drawTriangleWall(wall) {
         const points = getTrianglePoints(wall);
-        ctx.save();
         ctx.beginPath();
         ctx.moveTo(points[0].x, points[0].y);
         ctx.lineTo(points[1].x, points[1].y);
         ctx.lineTo(points[2].x, points[2].y);
         ctx.closePath();
-        ctx.fillStyle = "#05070d";
+        ctx.fillStyle = wallStyle.fill;
         ctx.fill();
-        ctx.strokeStyle = "#5f6f8a";
+        ctx.strokeStyle = wallStyle.stroke;
         ctx.lineWidth = 2;
         ctx.stroke();
-        ctx.clip();
-
-        ctx.strokeStyle = "#5f6f8a";
-        ctx.lineWidth = 2;
-        for (let i = -wall.height; i < wall.width + wall.height; i += 8) {
-            ctx.beginPath();
-            ctx.moveTo(wall.x + i, wall.y + wall.height);
-            ctx.lineTo(wall.x + i + wall.height, wall.y);
-            ctx.stroke();
-        }
-        ctx.restore();
         ctx.lineWidth = 1;
     }
 
