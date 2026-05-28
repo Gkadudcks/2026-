@@ -287,6 +287,8 @@ function showCutscene(stageIndex) {
             showAllText();
         } else {
             skipBtn.textContent = "SKIP";
+            skipBtn.blur();          // 스페이스바가 버튼 재클릭하는 현상 방지
+            container.onclick = null; // 게임 시작 후 재실행 방지
             container.style.display = "none";
             startStoryStage(stageIndex);
         }
