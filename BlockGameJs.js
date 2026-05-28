@@ -192,7 +192,7 @@ window.addEventListener("DOMContentLoaded", () => {
             <span id="scoreText">0</span>
         </div>
         <div class="o2-panel">
-            <img class="o2-label" src="images/oxygen-tank.png" alt="O2">
+            <img class="o2-label" src="images/o2panel.png" alt="O2">
             <div class="o2-bar-outer">
                 <div class="o2-bar-inner" id="o2Bar"></div>
             </div>
@@ -439,7 +439,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // 점수와 산소 UI 갱신
     function updateUI() {
-        scoreText.textContent = score;
+        scoreText.textContent = `${score}`;
         o2Text.textContent = `${Math.ceil(o2)}%`;
         o2Bar.style.width = `${o2}%`;
         o2Bar.classList.toggle("low", o2 < 20); // 20% 미만이면 "low" 클래스 추가 (CSS에서 빨간색 처리)
@@ -1269,13 +1269,51 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // 다음 스테이지 버튼 (현재는 같은 스테이지 재시작)
     nextStageBtn.addEventListener("click", () => {
+        const modes = Object.keys(difficultySettings);
+        let currentIndex = modes.indexOf(currentMode);
+
+        // 마지막 난이도(impossible) 클리어
+        if (currentIndex >= modes.length - 1) {
+
+            gameContainer.style.display = "none";
+            difficultyContainer.style.display = "flex";
+
+            document.body.style.backgroundImage = window.currentMenuBackground || 'url("images/space-background1.png")';
+
+            hideResultButtons();
+            return;
+        }
+
+        // 다음 난이도로 변경
+        currentMode = modes[currentIndex + 1];
+        currentDifficulty = difficultySettings[currentMode];
+        currentO2Drain = currentDifficulty.o2Drain;
+
         startRound();
     });
 
     // 키보드 입력 처리
+    let cheatBuffer = "";
     document.addEventListener("keydown", (event) => {
-        if (handleMenuKeyboard(event)) return; // 메뉴에서의 방향키/Enter 처리
+        // 치트 입력 감지 (키 코드 기반)
+        cheatBuffer += event.code;
 
+        // 최근 길이 제한
+        if (cheatBuffer.length > 50) {
+            cheatBuffer = cheatBuffer.slice(-50);
+        }
+
+        // "넘어가" = s j a d j r k
+        const clearCode = "KeySKeyJKeyAKeyDKeyJKeyRKeyK";
+
+        if (cheatBuffer.includes(clearCode)) {
+            cheatBuffer = "";
+            gameOver("STAGE CLEAR");
+            return;
+        }
+
+        if (handleMenuKeyboard(event)) return; // 메뉴에서의 방향키/Enter 처리
+        
         // Escape: 일시정지 토글
         if (event.key === "Escape") {
             if (isPaused) {
