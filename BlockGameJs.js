@@ -405,11 +405,30 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // 게임 결과 버튼 표시 (isSuccess: 스테이지 클리어 여부)
     function showResultButtons(isSuccess) {
-        gameResultButtons.style.display = "flex";
+         gameResultButtons.style.display = "flex";
         resumeBtn.style.display = "none";
-        retryBtn.style.display = isSuccess ? "none" : "block";     // 실패 시 재도전 버튼
-        nextStageBtn.style.display = isSuccess ? "block" : "none"; // 성공 시 다음 스테이지 버튼
+        // 실패 시
+        if (!isSuccess) {
+            retryBtn.style.display = "block";
+            nextStageBtn.style.display = "none";
+            backToMenuBtn.style.display = "block";
+            backToMenuBtn.textContent = "RETURN TO MENU";
+            return;
+        }
+
+        // impossible 클리어
+        if (currentMode === "impossible") {
+            retryBtn.style.display = "none";
+            nextStageBtn.style.display = "none";
+            backToMenuBtn.style.display = "block";
+            backToMenuBtn.textContent = "SELECT DIFFICULTY";
+            return;
+        }
+        // EASY / NORMAL / HARD 클리어
+        retryBtn.style.display = "none";
+        nextStageBtn.style.display = "block";
         backToMenuBtn.style.display = "block";
+        backToMenuBtn.textContent = "RETURN TO MENU";
     }
 
     // 일시정지 버튼 표시 (재개 + 메인메뉴)
@@ -1246,10 +1265,23 @@ window.addEventListener("DOMContentLoaded", () => {
     backToMenuBtn.addEventListener("click", () => {
         isPlaying = false;
         isPaused = false;
-        if (animationId) cancelAnimationFrame(animationId);
+        if (animationId) {
+            cancelAnimationFrame(animationId);
+        }
         gameContainer.style.display = "none";
-        menuContainer.style.display = "flex";
-        difficultyContainer.style.display = "none";
+
+        // impossible 클리어 상태
+        if ( gameOverMessage === "STAGE CLEAR" && currentDifficulty === difficultySettings.impossible) {
+            difficultyContainer.style.display = "flex";
+            menuContainer.style.display = "none";
+            difficultyBtns[0].focus(); // easy 버튼에 포커스
+
+        } else {
+            menuContainer.style.display = "flex";
+            difficultyContainer.style.display = "none";
+            focusMenuButton();
+        }
+
         document.body.style.backgroundImage = window.currentMenuBackground || 'url("images/space-background1.png")';
         canvasStack.style.transform = "translate(0, 0)";
         hideResultButtons();
