@@ -763,11 +763,16 @@ window.addEventListener("DOMContentLoaded", () => {
             impossible: 0.4
         };
 
+        // 드롭 가능한 아이템이 없으면 스킵
+        if (buffTypes.length === 0 && debuffTypes.length === 0) return;
+
         let type;
-        if (Math.random() < debuffChance[currentMode]) {
+        if (Math.random() < debuffChance[currentMode] && debuffTypes.length > 0) {
             type = debuffTypes[Math.floor(Math.random() * debuffTypes.length)];
-        } else {
+        } else if (buffTypes.length > 0) {
             type = buffTypes[Math.floor(Math.random() * buffTypes.length)];
+        } else {
+            return;
         }
 
         dropItems.push({
