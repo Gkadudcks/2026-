@@ -230,13 +230,16 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // 맵 파일은 격자(row/col)만 알고 있으므로, 실제 충돌/렌더링에 쓰는 캔버스 좌표로 변환한다.
     // rows/cols가 2 이상이면 여러 브릭 칸을 합친 하나의 큰 구조물 사각형이 된다.
+    // offsetCols/offsetRows는 구조물의 실제 렌더링/충돌 위치만 반 칸 단위로 보정할 때 사용한다.
     function getGridRect(cell, metrics) {
         const rowSpan = cell.rows || 1;
         const colSpan = cell.cols || 1;
+        const offsetCols = cell.offsetCols || 0;
+        const offsetRows = cell.offsetRows || 0;
 
         return {
-            x: metrics.offsetLeft + cell.col * (metrics.brickWidth + metrics.padding),
-            y: metrics.offsetTop + cell.row * (metrics.brickHeight + metrics.padding),
+            x: metrics.offsetLeft + (cell.col + offsetCols) * (metrics.brickWidth + metrics.padding),
+            y: metrics.offsetTop + (cell.row + offsetRows) * (metrics.brickHeight + metrics.padding),
             width: metrics.brickWidth * colSpan + metrics.padding * (colSpan - 1),
             height: metrics.brickHeight * rowSpan + metrics.padding * (rowSpan - 1)
         };
@@ -273,8 +276,15 @@ window.addEventListener("DOMContentLoaded", () => {
         obstacles.forEach((obstacle) => {
             const rows = obstacle.rows || 1;
             const cols = obstacle.cols || 1;
-            for (let r = obstacle.row; r < obstacle.row + rows; r++) {
-                for (let c = obstacle.col; c < obstacle.col + cols; c++) {
+            const offsetCols = obstacle.offsetCols || 0;
+            const offsetRows = obstacle.offsetRows || 0;
+            const startRow = Math.floor(obstacle.row + offsetRows);
+            const endRow = Math.ceil(obstacle.row + offsetRows + rows);
+            const startCol = Math.floor(obstacle.col + offsetCols);
+            const endCol = Math.ceil(obstacle.col + offsetCols + cols);
+
+            for (let r = startRow; r < endRow; r++) {
+                for (let c = startCol; c < endCol; c++) {
                     cellSet.delete(`${r},${c}`);
                 }
             }
