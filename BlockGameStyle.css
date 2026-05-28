@@ -182,6 +182,10 @@ body{
 }
 
 .score-box{
+    height:72px;
+    display:flex;
+    align-items:center;
+    gap:10px;
     padding:10px 14px;
     border:1px solid rgba(255,140,58,0.85);
     background:rgba(0,0,0,0.45);
@@ -195,17 +199,18 @@ body{
 
 .o2-panel{
     width:430px;
+    height:72px;
     display:flex;
     align-items:center;
     gap:10px;
-    padding:4px 14px;
+    padding:10px 14px;
     border:1px solid rgba(126,231,255,0.8);
     background:rgba(0,0,0,0.45);
 }
 
 .o2-label{
-    width:45px;
-    height:34px;
+    width:50px;
+    height:50px;
     object-fit:contain;
     flex-shrink:0;
     display:block;

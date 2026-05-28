@@ -4,6 +4,8 @@
 // - row/col: 시작 격자 위치, rows/cols: 차지하는 격자 크기입니다.
 // - type: solidBrick(금속 브릭), lineWall(얇은 벽), diamondWall(마름모), triangleWall(삼각형)입니다.
 // - direction: lineWall의 가로/세로 방향 또는 triangleWall의 빗면 방향입니다.
+// - offsetCols/offsetRows: 구조물의 실제 표시/충돌 위치만 격자 칸 단위로 보정합니다.
+//   1은 브릭 한 칸 간격, 0.5는 반 칸입니다. 음수는 왼쪽/위쪽, 양수는 오른쪽/아래쪽으로 이동합니다.
 window.BLOCK_GAME_MAPS = {
     normal: [
         // 좌우 브릭 묶음 사이를 세로 벽으로 막아 공이 중앙에서 크게 튀도록 만든 맵
@@ -17,17 +19,18 @@ window.BLOCK_GAME_MAPS = {
                 { row: 0, col: 3, rows: 4, cols: 2, type: "lineWall", direction: "vertical" }
             ]
         },
-        // 네 모서리 브릭 묶음 사이에 3x3 마름모 구조물을 두어 대각 반사를 보여주는 맵
+        // 네 모서리 브릭 묶음 사이에 마름모 구조물을 두어 대각 반사를 보여주는 맵
         {
             name: "diamond-island",
+            row: 7,
             brickGroups: [
                 { row: 0, col: 0, rows: 2, cols: 3 },
                 { row: 0, col: 5, rows: 2, cols: 3 },
-                { row: 2, col: 0, rows: 2, cols: 3 },
-                { row: 2, col: 5, rows: 2, cols: 3 }
+                { row: 5, col: 0, rows: 2, cols: 3 },
+                { row: 5, col: 5, rows: 2, cols: 3 }
             ],
             obstacles: [
-                { row: 1, col: 3, rows: 3, cols: 3, type: "diamondWall" }
+                { row: 2, col: 3, rows: 3, cols: 3, type: "diamondWall", offsetCols: -0.5 }
             ]
         },
         // 상단 브릭 아래쪽에 같은 역할의 수평 벽 3개를 배치한 맵
@@ -118,7 +121,7 @@ window.BLOCK_GAME_MAPS = {
                 { row: 4, col: 8, rows: 2, cols: 4 }
             ],
             obstacles: [
-                { row: 2, col: 5, rows: 3, cols: 3, type: "diamondWall" },
+                { row: 2, col: 5, rows: 3, cols: 3, type: "diamondWall", offsetCols: -0.5 },
                 { row: 3, col: 0, rows: 1, cols: 3, type: "lineWall", direction: "horizontal" },
                 { row: 3, col: 9, rows: 1, cols: 3, type: "lineWall", direction: "horizontal" }
             ]
