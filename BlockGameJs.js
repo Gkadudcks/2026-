@@ -1320,6 +1320,11 @@ window.addEventListener("DOMContentLoaded", () => {
         canvasStack.style.transform = "translate(0, 0)";
         hideResultButtons();
         gameOverMessage = null;
+        // 스토리모드 상태 초기화
+        if (window.storyMode) {
+            window.storyMode.active = false;
+            window.storyMode.currentStage = 0;
+        }
         focusMenuButton();
     });
 
