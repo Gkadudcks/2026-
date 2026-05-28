@@ -1332,22 +1332,28 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // 다음 스테이지 버튼
     nextStageBtn.addEventListener("click", () => {
-        const modes = Object.keys(difficultySettings);
-        const currentIndex = modes.indexOf(currentMode);
+        if (window.storyMode && window.storyMode.active) {
+            // 스토리모드: 다음 스테이지 컷씬으로
+            nextStoryStage();
+        } else {
+            // 일반모드: 다음 난이도로 자동 진행
+            const modes = Object.keys(difficultySettings);
+            const currentIndex = modes.indexOf(currentMode);
 
-        if (currentIndex >= modes.length - 1) {
-            // impossible 클리어 → 난이도 선택화면으로
-            gameContainer.style.display = "none";
-            difficultyContainer.style.display = "flex";
-            document.body.style.backgroundImage = window.currentMenuBackground || 'url("images/space-background1.png")';
-            hideResultButtons();
-            return;
+            if (currentIndex >= modes.length - 1) {
+                // impossible 클리어 → 난이도 선택화면으로
+                gameContainer.style.display = "none";
+                difficultyContainer.style.display = "flex";
+                document.body.style.backgroundImage = window.currentMenuBackground || 'url("images/space-background1.png")';
+                hideResultButtons();
+                return;
+            }
+            // 다음 난이도로 변경 후 시작
+            currentMode = modes[currentIndex + 1];
+            currentDifficulty = difficultySettings[currentMode];
+            currentO2Drain = currentDifficulty.o2Drain;
+            startRound();
         }
-        // 다음 난이도로 변경 후 시작
-        currentMode = modes[currentIndex + 1];
-        currentDifficulty = difficultySettings[currentMode];
-        currentO2Drain = currentDifficulty.o2Drain;
-        startRound();
     });
 
     // 키보드 입력 처리

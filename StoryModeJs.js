@@ -250,6 +250,12 @@ function showCutscene(stageIndex) {
 
     document.getElementById("gameResultButtons").style.display="none";
 
+    // 이전 스테이지 클리어 메시지가 캔버스에 남아있지 않도록 제거
+    const effectCanvas = document.getElementById("effectCanvas");
+    effectCanvas.getContext("2d").clearRect(0, 0, effectCanvas.width, effectCanvas.height);
+    const gameCanvas = document.getElementById("gameCanvas");
+    gameCanvas.getContext("2d").clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+
     container.style.display="flex";
     textEl.innerHTML=""
 
