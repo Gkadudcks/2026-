@@ -145,7 +145,7 @@ window.addEventListener("DOMContentLoaded", () => {
     let isPaused = false;           // 일시정지 여부
     let currentO2Drain = difficultySettings.easy.o2Drain;  // 현재 산소 감소 속도
     const PADDLE_HISTORY_FRAME = 10;    // 패들 이동 기록 프레임 수
-    const MIN_BALL_DY = 5;              // 공이 완전히 수평으로 흐르지 않도록 보장
+    const MIN_BALL_DY = 5;              // 공이 완전히 수평으로 흐르지 않도록 보장  
     let paddleMoveHistory = Array(PADDLE_HISTORY_FRAME).fill(0); // 최근 10프레임 패들 이동량
 
     // 공 배열 (x3 아이템으로 여러 개가 될 수 있어 배열로 관리)
@@ -854,7 +854,8 @@ window.addEventListener("DOMContentLoaded", () => {
                 // 속도 유지를 위한 기존 속도 계산
                 const speed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
                 // 공이 완전히 수평으로 흐르지 않게 최소 y축 움직임 보장
-                const dxLimit = Math.sqrt(speed * speed - MIN_BALL_DY * MIN_BALL_DY);
+                const minDy = speed*0.6;
+                const dxLimit = Math.sqrt(speed * speed - minDy * minDy);
                 // 패들 움직임에 보정계수 0.15를 곱해 추가
                 ball.dx = ball.dx + getAveragePaddleMovement() * 0.3;
                 // 속도 기반 dx, dy 계산
