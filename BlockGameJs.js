@@ -855,7 +855,9 @@ window.addEventListener("DOMContentLoaded", () => {
                 const speed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
                 // 공이 완전히 수평으로 흐르지 않게 최소 y축 움직임 보장
                 const minDy = speed*0.6;
+                // 공 속도에 비례한 최소 Y축 속도 설정
                 const dxLimit = Math.sqrt(speed * speed - minDy * minDy);
+                // minDy를 이용해 허용 가능한 최대 X축 속도 계산
                 // 패들 움직임에 보정계수 0.15를 곱해 추가
                 ball.dx = ball.dx + getAveragePaddleMovement() * 0.3;
                 // 속도 기반 dx, dy 계산
