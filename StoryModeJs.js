@@ -22,7 +22,7 @@ window.STORY_STAGES = [
         startO2: 100,
         availableItems: ["o2"],
         mapName: null,
-        background: "images/space-background1.png",
+        background: null,
         clearMessage: "시스템 복구 완료. 기억이 돌아오기 시작한다."
     },
     {
@@ -32,7 +32,7 @@ window.STORY_STAGES = [
         startO2: 100,
         availableItems: ["o2", "widebar", "x3"],
         mapName: "split-center-wall",    // 항로를 막는 아스트로파지 군집 연출
-        background: "images/space-background2.png",
+        background: null,
         clearMessage: "타우 세티까지 항로 확보. 계속 전진한다."
     },
     {
@@ -42,7 +42,7 @@ window.STORY_STAGES = [
         startO2: 100,
         availableItems: ["o2", "widebar", "x3", "smallball"],
         mapName: "diamond-island",       // 소수 패턴 시각적 연출
-        background: "images/space-background2.png",
+        background: "images/space-background1.png",
         clearMessage: "로키와 교신 성공. 우린 동맹이 되었다."
     },
     {
@@ -52,7 +52,7 @@ window.STORY_STAGES = [
         startO2: 100,
         availableItems: ["o2", "widebar", "x3", "smallball"],
         mapName: "three-mid-bars",       // 연구 장벽 느낌
-        background: "images/space-background3.png",
+        background: "images/space-background2.png",
         clearMessage: "아드리안에서 뭔가를 발견했다."
     },
     {
@@ -72,7 +72,7 @@ window.STORY_STAGES = [
         startO2: 30,                     // 긴박감 — 처음부터 LOW OXYGEN 경고
         availableItems: ["o2", "widebar", "x3", "smallball"],
         mapName: "diamond-cross",        // 가장 복잡한 맵
-        background: "images/game_play_bg.png",
+        background: "images/space-background3.png",
         clearMessage: "MISSION COMPLETE — 지구를 구했다."
     }
 ];
@@ -84,6 +84,7 @@ window.STORY_STAGES = [
 window.STORY_CUTSCENES = [
     {
         stage: 1,
+        character: null,
         lines: [
             "눈이 떠진다.",
             "여기는... 어디지?",
@@ -100,6 +101,7 @@ window.STORY_CUTSCENES = [
     },
     {
         stage: 2,
+        character: null,
         lines: [
             "기억이 돌아왔다.",
             "",
@@ -118,6 +120,7 @@ window.STORY_CUTSCENES = [
     },
     {
         stage: 3,
+        character: "loki1",
         lines: [
             "레이더에 뭔가 잡혔다.",
             "",
@@ -141,6 +144,7 @@ window.STORY_CUTSCENES = [
     },
     {
         stage: 4,
+        character: "loki1",
         lines: [
             "로키와 함께 아스트로파지를 분석했다.",
             "",
@@ -156,6 +160,7 @@ window.STORY_CUTSCENES = [
     },
     {
         stage: 5,
+        character: "loki1",
         lines: [
             "찾았다.",
             "",
@@ -176,6 +181,7 @@ window.STORY_CUTSCENES = [
     },
     {
         stage: 6,
+        character: "loki2",
         lines: [
             "로키는 나를 돌려보내기로 했다.",
             "자기는 에리드로 간다고.",
@@ -197,20 +203,43 @@ window.STORY_CUTSCENES = [
 ];
 
 // ─────────────────────────────────────────
-// 엔딩 텍스트 (Stage 6 클리어 시 표시)
+// 엔딩 A — 지구로 돌아가는 엔딩 (Stage 6 클리어 후)
 // ─────────────────────────────────────────
-window.STORY_ENDING = [
+window.STORY_ENDING_A = [
     "지구로 돌아왔다.",
     "",
     "타우모에바는 아스트로파지를 먹어치웠다.",
     "태양은 다시 빛나기 시작했다.",
     "",
+    "임무 완수.",
+    "그레이스는 영웅이 되었다.",
+    "",
     "로키—",
     "너도 잘 돌아갔겠지.",
-    "",
     "언젠가 다시 만날 수 있을까.",
     "별과 별 사이 어딘가에서.",
     "",
+    "ENDING A",
+    "— PROJECT HAIL MARY —"
+];
+
+// ─────────────────────────────────────────
+// 엔딩 B — 로키와 함께 남는 엔딩 (Stage 5 클리어 후 선택)
+// ─────────────────────────────────────────
+window.STORY_ENDING_B = [
+    "나는 남기로 했다.",
+    "",
+    "로키 혼자서는 에리드로 돌아갈 수 없다.",
+    "그걸 알면서 어떻게 떠날 수 있겠어.",
+    "",
+    "지구는... 다른 방법을 찾을 거야.",
+    "인류는 포기하지 않으니까.",
+    "",
+    "나는 여기, 로키 곁에 있다.",
+    "우주에서 가장 먼 곳에서.",
+    "가장 가까운 친구와 함께.",
+    "",
+    "ENDING B  ─  TRUE ENDING",
     "— PROJECT HAIL MARY —"
 ];
 
@@ -219,7 +248,8 @@ window.STORY_ENDING = [
 // ─────────────────────────────────────────
 window.storyMode = {
     active: false,       // 현재 스토리 모드 진행 중 여부
-    currentStage: 0      // 현재 스테이지 인덱스 (0 = Stage 1)
+    currentStage: 0,     // 현재 스테이지 인덱스 (0 = Stage 1)
+    endingChoice: null   // "A" = 지구귀환, "B" = 로키와 남음
 };
 
 // ─────────────────────────────────────────
@@ -247,8 +277,19 @@ function showCutscene(stageIndex) {
     const cutscene=window.STORY_CUTSCENES[stageIndex];
     const container=document.getElementById("cutsceneContainer");
     const textEl=document.getElementById("cutsceneText");
+    const charImg=document.getElementById("cutsceneCharacter");
 
     document.getElementById("gameResultButtons").style.display="none";
+
+    // 캐릭터 이미지 표시 및 레이아웃 전환
+    if (cutscene.character) {
+        charImg.src = `images/${cutscene.character}.png`;
+        charImg.style.display = "block";
+        container.classList.add("with-character");
+    } else {
+        charImg.style.display = "none";
+        container.classList.remove("with-character");
+    }
 
     // 이전 스테이지 클리어 메시지가 캔버스에 남아있지 않도록 제거
     const effectCanvas = document.getElementById("effectCanvas");
@@ -293,8 +334,10 @@ function showCutscene(stageIndex) {
             showAllText();
         } else {
             skipBtn.textContent = "SKIP";
-            skipBtn.blur();          // 스페이스바가 버튼 재클릭하는 현상 방지
-            container.onclick = null; // 게임 시작 후 재실행 방지
+            skipBtn.blur();
+            container.onclick = null;
+            charImg.style.display = "none";
+            container.classList.remove("with-character");
             container.style.display = "none";
             startStoryStage(stageIndex);
         }
@@ -308,48 +351,112 @@ function startStoryStage(stageIndex) {
     // BlockGameJs.js의 window.gameAPI를 통해 난이도 설정 후 게임 시작
     window.gameAPI.setDifficulty(stage.difficulty);
     window.gameAPI.setAvailableItems(stage.availableItems);
+    window.gameAPI.setBackground(stage.background);
     window.gameAPI.startRound();
 }
 
 // 스테이지 클리어 후 다음 스테이지로 진행 (nextStageBtn 클릭 시 호출)
 function nextStoryStage() {
     window.storyMode.currentStage++;
-    if (window.storyMode.currentStage >= window.STORY_STAGES.length) {
-        showEnding(); // 마지막 스테이지 클리어 → 엔딩
+
+    // 스테이지 5 클리어 → 분기 선택 화면
+    if (window.storyMode.currentStage === 5) {
+        showBranchChoice();
         return;
     }
+
+    // 스테이지 6 클리어 → 엔딩 A
+    if (window.storyMode.currentStage >= window.STORY_STAGES.length) {
+        showEnding(window.STORY_ENDING_A);
+        return;
+    }
+
     showCutscene(window.storyMode.currentStage);
 }
 
-// 엔딩 화면 표시 (Stage 6 클리어 시 호출)
-function showEnding() {
+// 분기 선택 화면 (스테이지 5 클리어 후)
+function showBranchChoice() {
     const container = document.getElementById("cutsceneContainer");
     const textEl = document.getElementById("cutsceneText");
     const skipBtn = document.getElementById("cutsceneSkipBtn");
+    const branchContainer = document.getElementById("branchChoiceContainer");
+
+    document.getElementById("gameResultButtons").style.display = "none";
+
+    const effectCanvas = document.getElementById("effectCanvas");
+    effectCanvas.getContext("2d").clearRect(0, 0, effectCanvas.width, effectCanvas.height);
+    const gameCanvas = document.getElementById("gameCanvas");
+    gameCanvas.getContext("2d").clearRect(0, 0, gameCanvas.width, gameCanvas.height);
 
     container.style.display = "flex";
-    skipBtn.style.display = "none"; // 엔딩은 SKIP 버튼 숨김
+    container.onclick = null;
+    skipBtn.style.display = "none";
+    branchContainer.style.display = "flex";
+
+    textEl.innerHTML = [
+        "타우모에바 배양 완료.",
+        "",
+        "하지만 로키는 혼자 에리드로 돌아갈 수 없다.",
+        "나 없이는.",
+        "",
+        "그리고 우리 중 하나는...",
+        "혼자 돌아가야 한다.",
+        "",
+        "나는 어떻게 할 것인가."
+    ].map(line => `<p>${line || "&nbsp;"}</p>`).join("");
+
+    document.getElementById("branchABtn").onclick = (e) => {
+        e.stopPropagation();
+        branchContainer.style.display = "none";
+        skipBtn.style.display = "block";
+        container.style.display = "none";
+        window.storyMode.endingChoice = "A";
+        showCutscene(5); // 스테이지 6 컷씬 → 스테이지 6 플레이
+    };
+
+    document.getElementById("branchBBtn").onclick = (e) => {
+        e.stopPropagation();
+        branchContainer.style.display = "none";
+        skipBtn.style.display = "block";
+        window.storyMode.endingChoice = "B";
+        showEnding(window.STORY_ENDING_B); // 바로 엔딩 B
+    };
+}
+
+// 엔딩 화면 표시 (lines: 표시할 텍스트 배열)
+function showEnding(lines) {
+    const container = document.getElementById("cutsceneContainer");
+    const textEl = document.getElementById("cutsceneText");
+    const skipBtn = document.getElementById("cutsceneSkipBtn");
+    const charImg = document.getElementById("cutsceneCharacter");
+
+    document.getElementById("gameResultButtons").style.display = "none";
+    charImg.style.display = "none";
+    container.classList.remove("with-character");
+    container.style.display = "flex";
+    container.onclick = null;
+    skipBtn.style.display = "none";
     textEl.innerHTML = "";
 
     let lineIndex = 0;
     const intervalId = setInterval(() => {
-        if (lineIndex >= window.STORY_ENDING.length) {
+        if (lineIndex >= lines.length) {
             clearInterval(intervalId);
             return;
         }
         const p = document.createElement("p");
-        p.textContent = window.STORY_ENDING[lineIndex] || "";
+        p.textContent = lines[lineIndex] || "";
         textEl.appendChild(p);
         lineIndex++;
     }, 800);
 
-    // 화면 클릭 시 메인 메뉴로 복귀
     container.onclick = () => {
         clearInterval(intervalId);
         container.style.display = "none";
-        skipBtn.style.display = "block"; // SKIP 버튼 복원
+        skipBtn.style.display = "block";
         window.storyMode.active = false;
         window.storyMode.currentStage = 0;
+        window.storyMode.endingChoice = null;
         document.getElementById("gameContainer").style.display = "none";
         document.getElementById("menu-container").style.display = "flex";
         document.body.style.backgroundImage =

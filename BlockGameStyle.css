@@ -328,6 +328,33 @@ body{
     padding: 40px;
 }
 
+#cutsceneCharacter {
+    width: 260px;
+    height: auto;
+    display: none;
+    flex-shrink: 0;
+    align-self: flex-end;
+    opacity: 0.95;
+    filter: drop-shadow(0 0 12px rgba(100, 180, 255, 0.3));
+}
+
+/* 캐릭터 있을 때: 가로 배치 */
+#cutsceneContainer.with-character {
+    flex-direction: row !important;
+    align-items: flex-end;
+    padding: 30px 30px 20px 20px;
+    gap: 20px;
+}
+
+.cutscene-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    height: 100%;
+}
+
 #cutsceneSkipBtn {
     margin-top: 20px;
     padding: 10px 30px;
@@ -342,6 +369,47 @@ body{
 
 #cutsceneSkipBtn:hover {
     background: white;
+    color: black;
+}
+
+#branchChoiceContainer {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin-top: 32px;
+}
+
+#branchABtn, #branchBBtn {
+    padding: 14px 36px;
+    font-family: "Orbitron", sans-serif;
+    font-size: 15px;
+    letter-spacing: 2px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+    width: 300px;
+}
+
+#branchABtn {
+    background: rgba(255, 140, 58, 0.15);
+    border: 1px solid rgba(255, 140, 58, 0.8);
+    color: #ff8c3a;
+}
+
+#branchABtn:hover {
+    background: #ff8c3a;
+    color: black;
+}
+
+#branchBBtn {
+    background: rgba(100, 180, 255, 0.1);
+    border: 1px solid rgba(100, 180, 255, 0.7);
+    color: #64b4ff;
+}
+
+#branchBBtn:hover {
+    background: #64b4ff;
     color: black;
 }
 

@@ -55,6 +55,18 @@ window.addEventListener("DOMContentLoaded", () => {
     const gameBg = new Image();
     gameBg.src = "images/game_play_bg.png";
 
+    // 스토리 모드 스테이지별 배경 이미지 미리 로드
+    const stageBgImages = {
+        "images/space-background1.png": new Image(),
+        "images/space-background2.png": new Image(),
+        "images/space-background3.png": new Image(),
+    };
+    stageBgImages["images/space-background1.png"].src = "images/space-background1.png";
+    stageBgImages["images/space-background2.png"].src = "images/space-background2.png";
+    stageBgImages["images/space-background3.png"].src = "images/space-background3.png";
+
+    let currentGameBg = gameBg; // 현재 게임 배경 (기본값: gameBg)
+
     // 메뉴 화면 배경 설정 (SettingsJs.js에서 변경 가능)
     document.body.style.backgroundImage = window.currentMenuBackground || 'url("images/space-background1.png")';
 
@@ -87,28 +99,28 @@ window.addEventListener("DOMContentLoaded", () => {
     // ─────────────────────────────────────────
     const difficultySettings = {
         easy: {
-            ballSpeed: 13,
+            ballSpeed: 8,
             o2Drain: 2,
             brickRow: 3,
             brickCol: 6,
             doubleBrickChance: 0
         },
         normal: {
-            ballSpeed: 15,
+            ballSpeed: 10,
             o2Drain: 3,
             brickRow: 4,
             brickCol: 8,
             doubleBrickChance: 0.2 //20% 확률로 HP 2인 벽돌 등장
         },
         hard: {
-            ballSpeed: 16,
+            ballSpeed: 12,
             o2Drain: 4,
             brickRow: 5,
             brickCol: 10,
             doubleBrickChance: 0.3 //30% 확률로 HP 2인 벽돌 등장
         },
         impossible: {
-            ballSpeed: 18,
+            ballSpeed: 14,
             o2Drain: 6,
             brickRow: 6,
             brickCol: 12,
@@ -430,8 +442,8 @@ window.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // impossible 클리어
-        if (currentMode === "impossible") {
+        // impossible 클리어 (스토리 모드에서는 nextStageBtn 표시)
+        if (currentMode === "impossible" && !(window.storyMode && window.storyMode.active)) {
             retryBtn.style.display = "none";
             nextStageBtn.style.display = "none";
             backToMenuBtn.style.display = "block";
@@ -442,7 +454,15 @@ window.addEventListener("DOMContentLoaded", () => {
         retryBtn.style.display = "none";
         nextStageBtn.style.display = "block";
         backToMenuBtn.style.display = "block";
-        backToMenuBtn.textContent = "RETURN TO MENU";
+
+        // 스토리 모드 마지막 스테이지(6) 클리어 시 버튼 텍스트 변경
+        if (window.storyMode && window.storyMode.active && window.storyMode.currentStage === 5) {
+            nextStageBtn.textContent = "🚀 ENDING CREDITS";
+            backToMenuBtn.textContent = "RETURN TO MENU";
+        } else {
+            nextStageBtn.textContent = "NEXT STAGE";
+            backToMenuBtn.textContent = "RETURN TO MENU";
+        }
     }
 
     // 일시정지 버튼 표시 (재개 + 메인메뉴)
@@ -530,7 +550,7 @@ window.addEventListener("DOMContentLoaded", () => {
     // 배경 캔버스에 게임 진행 배경 이미지 그리기
     function drawBackground() {
         bgCtx.clearRect(0, 0, WIDTH, HEIGHT);
-        bgCtx.drawImage(gameBg, 0, 0, WIDTH, HEIGHT);
+        bgCtx.drawImage(currentGameBg, 0, 0, WIDTH, HEIGHT);
     }
 
     // 공 그리기 (여러 개일 경우 전부 그림)
@@ -1320,6 +1340,7 @@ window.addEventListener("DOMContentLoaded", () => {
         canvasStack.style.transform = "translate(0, 0)";
         hideResultButtons();
         gameOverMessage = null;
+        currentGameBg = gameBg; // 게임 배경 기본값으로 초기화
         // 스토리모드 상태 초기화
         if (window.storyMode) {
             window.storyMode.active = false;
@@ -1446,6 +1467,12 @@ window.addEventListener("DOMContentLoaded", () => {
 
         // 게임 시작 함수
         // StoryModeJs.js의 startStoryStage()에서 컷씬이 끝난 후 게임을 시작할 때 호출
-        startRound: () => startRound()
+        startRound: () => startRound(),
+
+        // 스테이지 배경 이미지 설정 함수
+        // src: "images/space-background1.png" 등 / null이면 기본 게임 배경으로 복원
+        setBackground: (src) => {
+            currentGameBg = (src && stageBgImages[src]) ? stageBgImages[src] : gameBg;
+        }
     };
 });

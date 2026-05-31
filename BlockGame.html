@@ -54,8 +54,15 @@
 		</div>
 		<!-- 스토리모드 컷씬 오버레이 -->
 		<div id="cutsceneContainer">
-			<div id="cutsceneText"></div>
-			<button id="cutsceneSkipBtn">SKIP</button>
+			<img id="cutsceneCharacter" src="" alt="character">
+			<div class="cutscene-content">
+				<div id="cutsceneText"></div>
+				<div id="branchChoiceContainer" style="display:none;">
+					<button id="branchABtn">🚀 지구로 돌아간다</button>
+					<button id="branchBBtn">⭐ 로키와 함께 남는다</button>
+				</div>
+				<button id="cutsceneSkipBtn">SKIP</button>
+			</div>
 		</div>
 
 		<div class="game-result-buttons" id="gameResultButtons">
