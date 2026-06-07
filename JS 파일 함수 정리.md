@@ -1,188 +1,512 @@
 # JS 파일 함수 정리
 
+## 1. BlockGameJs.js — 게임 본체 담당
 
+### 초기 설정 부분
 
+* 캔버스(`backgroundCanvas`, `gameCanvas`, `effectCanvas`) 생성 및 관리
+* 메뉴 버튼 및 게임 UI 초기화
+* 이미지 리소스 로드
+* 점수 및 산소(O₂) 게이지 생성
+* 공, 패들, 벽돌, 아이템 배열 초기화
+* 난이도 설정값(`difficultySettings`) 정의
 
+---
 
-**1. BlockGameJs.js — 게임 본체 담당**
+### 게임 초기화 및 진행 함수
 
+#### resetGame()
 
+* 게임 상태 초기화
+* 점수, 산소, 공, 패들, 아이템 리셋
+* 맵 선택 후 벽돌 및 장애물 생성
 
+#### startRound()
 
+* 게임 시작
+* 게임 루프 실행
+* 결과창 숨김
 
-초기 설정 부분
+#### gameOver()
 
-캔버스, 버튼, 메뉴 화면, 이미지, 점수 UI, 산소 UI, 공, 패들, 벽돌 배열 같은 기본 요소를 준비한다.
+* 게임 종료 처리
+* 성공/실패 판정
+* 결과 버튼 표시
 
+#### gameLoop()
 
+* 게임의 핵심 반복 함수
+* 패들 이동
+* 공 이동
+* 충돌 검사
+* 아이템 처리
+* 산소 감소
+* 화면 렌더링
 
-난이도 설정
+---
 
-difficultySettings에서 easy, normal, hard, impossible마다 공 속도, 산소 감소 속도, 벽돌 행/열 수, HP 2 벽돌 확률을 다르게 설정한다.
+### 맵 및 벽돌 생성 함수
 
+#### getBrickGridMetrics()
 
+* 현재 난이도에 맞는 벽돌 행/열 정보 계산
+* 벽돌 크기 자동 조정
 
-게임 시작/초기화 함수
+#### getGridRect()
 
-resetGame(), startRound(), gameOver()
+* 격자 좌표를 실제 캔버스 좌표로 변환
 
-새 게임을 시작할 때 점수, 산소, 공, 패들, 아이템, 벽돌, 장애물을 초기화하고 게임 루프를 실행한다.
+#### addBrick()
 
+* 벽돌 객체 생성
+* 난이도에 따라 HP 1 또는 HP 2 설정
 
+#### addBrickCellsFromGroup()
 
-벽돌/맵/장애물 생성 함수
+* `brickGroups` 정보를 실제 벽돌 셀 목록으로 변환
 
-getBrickGridMetrics(), getGridRect(), addBrick(), createBricks(), selectCurrentMap(), createWalls()
+#### removeObstacleCells()
 
-난이도와 맵 구조에 맞춰 벽돌 크기와 위치를 계산하고, 일반 벽돌과 깨지지 않는 장애물을 만든다.
+* 장애물이 위치한 셀을 벽돌 생성 후보에서 제거
 
+#### createBricks()
 
+* 현재 맵 구조에 맞는 벽돌 생성
 
-그리기 함수
+#### selectCurrentMap()
 
-drawBackground(), drawBall(), drawPaddle(), drawBricks(), drawWalls(), drawItems(), drawLowOxygenWarning(), drawCenterMessage()
+* 난이도에 맞는 특수 맵 랜덤 선택
 
-배경, 공, 패들, 벽돌, 장애물, 아이템, 산소 부족 경고, 게임 종료 메시지를 화면에 그린다.
+#### createWalls()
 
+* 맵 데이터의 장애물을 실제 충돌 객체로 변환
 
+---
 
-장애물 모양 함수
+### UI 및 메뉴 함수
 
-drawLineWall(), drawDiamondWall(), drawTriangleWall(), getTrianglePoints(), getDiamondPoints()
+#### updateUI()
 
-선형 벽, 마름모 벽, 삼각형 벽을 각각 다른 모양으로 그리고, 충돌 계산에 필요한 꼭짓점 좌표를 만든다.
+* 점수 표시 갱신
+* 산소 게이지 갱신
 
+#### hideResultButtons()
 
+* 결과 버튼 숨김
 
-이동/조작 함수
+#### showResultButtons()
 
-movePaddle(), moveBall(), recordPaddleMovement(), getAveragePaddleMovement()
+* 게임 결과 버튼 표시
+* Retry / Next Stage / Return To Menu 관리
 
-패들과 공을 움직인다. 패들이 움직인 방향도 기록해서 공이 패들에 맞았을 때 반사 방향에 영향을 준다.
+#### showPauseButtons()
 
+* 일시정지 메뉴 표시
 
+#### focusMenuButton()
 
-충돌 처리 함수
+* 메뉴 기본 포커스 설정
 
-isBallHitRect(), checkBrickCollision(), checkWallCollision()과 여러 보조 함수
+#### getActiveMenuScreen()
 
-공이 벽돌이나 장애물에 닿았는지 확인하고, 닿으면 공을 튕기거나 벽돌 HP를 줄인다. 삼각형/마름모 벽은 다각형 충돌 계산을 따로 사용한다.
+* 현재 표시 중인 메뉴 화면 반환
 
+#### focusMenuScreenControl()
 
+* 현재 메뉴 선택 항목 포커스
 
-아이템 함수
+#### handleMenuKeyboard()
 
-spawnItem(), moveItems()
+* 방향키 메뉴 이동
+* Enter 선택 처리
 
-벽돌이 깨질 때 아이템을 생성하고, 패들이 아이템을 먹으면 산소 회복, 패들 확장, 공 3개 증가, 공 크기 감소 같은 효과를 적용한다.
+---
 
+### 렌더링 함수
 
+#### drawBackground()
 
-UI/메뉴 함수
+* 게임 배경 이미지 출력
 
-updateUI(), hideResultButtons(), showResultButtons(), showPauseButtons(), handleMenuKeyboard()
+#### drawBall()
 
-점수와 산소 게이지를 갱신하고, 결과 버튼이나 일시정지 버튼을 보여준다. 메뉴에서는 방향키와 Enter로 선택할 수 있게 한다.
+* 공 렌더링
 
+#### drawPaddle()
 
+* 패들 렌더링
 
-일시정지/산소/게임 루프 함수
+#### drawBricks()
 
-pauseGame(), resumeGame(), updateOxygen(), gameLoop()
+* 벽돌 이미지 렌더링
 
-게임을 멈추거나 다시 시작하고, 시간에 따라 산소를 줄인다. gameLoop()는 매 프레임마다 이동, 충돌, 아이템, 산소, 화면 그리기를 반복하는 핵심 함수다.
+#### drawWalls()
 
+* 장애물 렌더링
 
+#### drawItems()
 
-이벤트 처리 부분
+* 아이템 렌더링
 
-시작 버튼, 종료 버튼, 난이도 버튼, 재시작, 다음 스테이지, 메인 메뉴, 키보드 입력, 마우스 이동 같은 사용자 행동을 처리한다.
+#### drawLowOxygenWarning()
 
+* 산소 부족 경고 표시
 
+#### drawCenterMessage()
 
-**2. BlockGameMaps.js — 특수 맵 데이터 담당**
+* 게임 오버 또는 스테이지 클리어 메시지 표시
 
+---
 
+### 장애물 렌더링 함수
 
-전체 구조
+#### drawLineWall()
 
-window.BLOCK\_GAME\_MAPS라는 전역 객체 안에 normal, hard, impossible 난이도별 맵이 들어 있다.
+* 직선 벽 렌더링
 
+#### drawDiamondWall()
 
+* 마름모 벽 렌더링
 
-brickGroups
+#### drawTriangleWall()
 
-일반 벽돌이 들어갈 영역을 정한다.
+* 삼각형 벽 렌더링
 
-예를 들어 row, col, rows, cols 값으로 “몇 번째 줄, 몇 번째 칸부터 몇 칸짜리 벽돌 구역인지”를 표시한다.
+#### getTrianglePoints()
 
+* 삼각형 꼭짓점 좌표 계산
 
+#### getDiamondPoints()
 
-obstacles
+* 마름모 꼭짓점 좌표 계산
 
-깨지지 않는 장애물을 배치한다.
+---
 
-장애물 종류는 lineWall, diamondWall, triangleWall 등이 있고, direction 값으로 가로/세로 방향이나 삼각형 방향을 정한다.
+### 이동 및 조작 함수
 
+#### movePaddle()
 
+* 키보드 또는 마우스 입력에 따라 패들 이동
 
-난이도별 역할
+#### recordPaddleMovement()
 
-normal은 비교적 단순한 벽이나 마름모 구조물이 나오고, hard는 중앙 벽이나 삼각형 구조물이 추가된다. impossible은 더 빽빽한 벽돌과 여러 삼각형/마름모 구조물로 공의 진행 방향을 어렵게 만든다.
+* 최근 패들 이동량 저장
 
+#### getAveragePaddleMovement()
 
+* 평균 이동량 계산
+* 공 반사 방향 보정
 
-즉 이 파일은 직접 게임을 실행하는 함수는 거의 없고, BlockGameJs.js가 이 데이터를 읽어서 실제 벽돌과 장애물로 변환한다.
+#### moveBall()
 
+* 공 이동
+* 벽, 천장, 패들 충돌 처리
+* 공이 모두 사라지면 게임 오버
 
+---
 
-**3. SettingsJs.js — 환경설정 담당**
+### 충돌 처리 함수
 
+#### isBallHitRect()
 
+* 공과 사각형 충돌 검사
 
-게임 설정 화면과 사용자 설정 기능을 담당하는 파일.
+#### getWallPolygon()
 
+* 장애물을 다각형 형태로 변환
 
+#### getPolygonCenter()
 
-초기 실행 부분
+* 다각형 중심 계산
 
-DOMContentLoaded 안에서 HTML 요소들을 가져오고, 버튼 이벤트를 연결한다. 메인 메뉴 배경값도 window.currentMenuBackground에 저장해서 다른 JS 파일에서 사용할 수 있게 한다.
+#### getClosestPointOnSegment()
 
+* 선분과 점 사이의 최소 거리 계산
 
+#### isPointInPolygon()
 
-화면 전환 함수
+* 점이 다각형 내부에 있는지 판정
 
-showMenu(), showSettings()
+#### getCirclePolygonCollision()
 
-메인 메뉴와 환경설정 화면을 서로 전환한다.
+* 원과 다각형 충돌 계산
 
+#### bounceBallFromRect()
 
+* 사각형 반사 처리
 
-사운드 설정 함수/이벤트
+#### bounceBallFromPolygon()
 
-showAudioSettings(), showSettingsFromAudio()
+* 다각형 반사 처리
 
-사운드 설정 화면으로 들어가거나 다시 환경설정 화면으로 돌아간다.
+#### getWallCollision()
 
-BGM ON/OFF 버튼은 음악을 재생/정지하고, 트랙 선택은 음악 파일을 바꾸며, 볼륨 슬라이더는 BGM과 효과음 크기를 조절한다.
+* 장애물 충돌 종류 판정
 
+#### checkWallCollision()
 
+* 공과 장애물 충돌 처리
 
-배경 설정 함수/이벤트
+#### checkBrickCollision()
 
-showBackgroundSettings(), showSettingsFromBackground(), applyBackground()
+* 공과 벽돌 충돌 처리
+* HP 감소
+* 점수 증가
+* 아이템 생성
 
-배경 설정 화면으로 이동하거나 돌아가고, 선택한 배경 이미지를 body에 적용한다. 배경 1, 2, 3 버튼을 누르면 메뉴 배경이 바뀐다.
+---
 
+### 아이템 함수
 
+#### spawnItem()
 
-조작 방식 설정 함수/이벤트
+* 벽돌 파괴 시 아이템 생성
+* 난이도별 등장 확률 적용
 
-showControlSettings(), showSettingsFromControl(), setControlMode()
+아이템 종류:
 
-조작 방식을 키보드, 마우스, 둘 다 중에서 선택한다. 선택한 값은 window.controlMode에 저장되고, BlockGameJs.js가 이 값을 참고해서 패들 조작 방식을 결정한다.
+* `o2` : 산소 회복
+* `widebar` : 패들 확장
+* `x3` : 공 3개 생성
+* `smallball` : 공 크기 감소
 
+#### moveItems()
 
+* 아이템 낙하 처리
+* 패들 획득 처리
+* 아이템 효과 적용
 
-**BlockGameJs.js는 게임 실행, BlockGameMaps.js는 맵 데이터, SettingsJs.js는 환경설정 담당**
+---
 
+### 산소 및 게임 상태 함수
+
+#### updateOxygen()
+
+* 시간 경과에 따른 산소 감소
+
+#### pauseGame()
+
+* 게임 일시정지
+
+#### resumeGame()
+
+* 게임 재개
+
+---
+
+### 이벤트 처리
+
+#### 버튼 이벤트
+
+* 게임 시작
+* 게임 종료
+* 난이도 선택
+* Retry
+* Next Stage
+* Return To Menu
+
+#### 키보드 이벤트
+
+* 패들 이동
+* 메뉴 선택
+* 일시정지
+
+#### 마우스 이벤트
+
+* 패들 이동
+
+---
+
+## 2. BlockGameMaps.js — 특수 맵 데이터 담당
+
+### 역할
+
+게임 난이도별 특수 맵 구조를 정의하는 데이터 파일
+
+---
+
+### window.BLOCK_GAME_MAPS
+
+난이도별 맵 목록 저장
+
+* normal
+* hard
+* impossible
+
+---
+
+### brickGroups
+
+일반 벽돌 생성 영역
+
+속성:
+
+* row
+* col
+* rows
+* cols
+
+---
+
+### obstacles
+
+깨지지 않는 장애물 정의
+
+속성:
+
+* type
+* direction
+* row
+* col
+* rows
+* cols
+* offsetRows
+* offsetCols
+
+---
+
+### 장애물 종류
+
+#### lineWall
+
+* 가로 또는 세로 직선 벽
+
+#### diamondWall
+
+* 마름모 벽
+* 대각선 반사
+
+#### triangleWall
+
+* 삼각형 벽
+* 방향별 반사
+
+---
+
+### 맵 예시
+
+#### normal
+
+* split-center-wall
+* diamond-island
+* shallow-horizontal-gates
+
+#### hard
+
+* three-mid-bars
+* narrow-center-entry
+* triangle-guides
+
+#### impossible
+
+* dense-triangle-guides
+* tight-corridor
+* diamond-cross
+
+---
+
+## 3. SettingsJs.js — 환경설정 담당
+
+### 역할
+
+게임 환경 설정 관리
+
+---
+
+### 화면 전환 함수
+
+#### showMenu()
+
+* 메인 메뉴 표시
+
+#### showSettings()
+
+* 설정 화면 표시
+
+#### showAudioSettings()
+
+* 사운드 설정 화면 표시
+
+#### showSettingsFromAudio()
+
+* 사운드 설정 → 설정 메뉴 복귀
+
+#### showBackgroundSettings()
+
+* 배경 설정 화면 표시
+
+#### showSettingsFromBackground()
+
+* 배경 설정 → 설정 메뉴 복귀
+
+#### showControlSettings()
+
+* 조작 설정 화면 표시
+
+#### showSettingsFromControl()
+
+* 조작 설정 → 설정 메뉴 복귀
+
+---
+
+### 사운드 설정
+
+#### BGM ON/OFF
+
+* 음악 재생
+* 음악 정지
+
+#### 트랙 변경
+
+* 선택한 음악 재생
+
+#### 볼륨 조절
+
+* BGM 볼륨 조절
+* 효과음 볼륨 조절
+
+---
+
+### 배경 설정
+
+#### applyBackground()
+
+* 메뉴 배경 이미지 적용
+
+배경 종류:
+
+* `space-background1`
+* `space-background2`
+* `space-background3`
+
+---
+
+### 조작 방식 설정
+
+#### setControlMode(mode)
+
+설정값:
+
+* `keyboard`
+* `mouse`
+* `both`
+
+선택한 조작 방식을 `window.controlMode`에 저장한다.
+
+`BlockGameJs.js`에서 이를 참조하여 실제 패들 조작 방식을 결정한다.
+
+---
+
+## 파일별 역할 요약
+
+### BlockGameJs.js
+
+게임 실행, 충돌 처리, 렌더링, 아이템, UI, 난이도, 스테이지 진행 담당
+
+### BlockGameMaps.js
+
+특수 맵 구조 및 장애물 데이터 정의 담당
+
+### SettingsJs.js
+
+배경, 사운드, 조작 방식 등 환경설정 담당
